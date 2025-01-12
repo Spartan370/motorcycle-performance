@@ -1,131 +1,112 @@
 class PerformanceMapper {
     constructor() {
-        this.performanceData = new Float32Array(1024)
-        this.fftSize = 2048
-        this.analyzer = new AnalyserNode(new AudioContext(), { fftSize: this.fftSize })
-        this.dataArray = new Float32Array(this.fftSize)
-        this.initializePerformanceMetrics()
-    }
-
-    initializePerformanceMetrics() {
         this.metrics = {
-            powerCurve: new Float32Array(100),
-            torqueCurve: new Float32Array(100),
-            accelerationProfile: new Float32Array(100),
-            gForces: new Float32Array(3),
-            thermalData: new Float32Array(64),
-            suspensionTravel: new Float32Array(4),
-            tirePressures: new Float32Array(4),
-            brakingForces: new Float32Array(4)
+            power: [],
+            torque: [],
+            acceleration: [],
+            handling: []
         }
-
-        this.setupPerformanceGraphs()
-        this.initializeFFTAnalysis()
+        this.setupMetrics()
     }
 
-    setupPerformanceGraphs() {
-        this.graphs = {
-            power: this.createGraph('powerCurve', 'rgb(255,0,0)'),
-            torque: this.createGraph('torqueCurve', 'rgb(0,255,0)'),
-            acceleration: this.createGraph('accelerationProfile', 'rgb(0,0,255)')
-        }
-
-        this.overlayCanvas = document.createElement('canvas')
-        this.overlayCtx = this.overlayCanvas.getContext('2d')
-        this.setupWebGL()
+    setupMetrics() {
+        this.powerCurve = new CurveCalculator('power')
+        this.torqueCurve = new CurveCalculator('torque')
+        this.gearRatios = [2.885, 2.062, 1.762, 1.522, 1.333, 1.200]
     }
 
-    calculateRealTimePerformance(rpm, throttle, load) {
-        const baseHP = 200
-        const torquePeak = 120
-        const rpmPeak = 13500
-        
-        let power = baseHP * (1 - Math.exp(-(rpm/rpmPeak))) * throttle
-        let torque = torquePeak * Math.sin(Math.PI * rpm/rpmPeak) * load
-        
-        const boost = this.calculateBoostPressure(rpm, throttle)
-        const efficiency = this.calculateEngineEfficiency(rpm, temperature)
-        
-        power *= boost * efficiency
-        torque *= boost * efficiency
-        
-        return { power, torque }
-    }
-
-    processFFTData() {
-        this.analyzer.getFloatFrequencyData(this.dataArray)
-        const engineHarmonics = this.extractEngineHarmonics()
-        const vibrationProfile = this.calculateVibrationProfile()
+    calculatePerformance(rpm, throttle, gear) {
+        const powerOutput = this.powerCurve.getValue(rpm) * throttle
+        const torqueOutput = this.torqueCurve.getValue(rpm) * throttle
+        const wheelForce = this.calculateWheelForce(torqueOutput, gear)
         
         return {
-            harmonics: engineHarmonics,
-            vibration: vibrationProfile,
-            peakFrequency: this.findPeakFrequency()
+            power: powerOutput,
+            torque: torqueOutput,
+            force: wheelForce
         }
     }
 
-    calculateDynamicPerformance(velocity, acceleration, lean) {
-        const dragCoefficient = 0.3
-        const frontalArea = 1.0
-        const airDensity = 1.225
+    calculateWheelForce(torque, gear) {
+        const gearRatio = this.gearRatios[gear - 1]
+        const finalDrive = 2.933
+        const wheelRadius = 0.3302 // meters
         
-        const drag = 0.5 * dragCoefficient * frontalArea * airDensity * velocity * velocity
-        const downforce = this.calculateDownforce(velocity, lean)
-        const corneringForce = this.calculateCorneringForce(velocity, lean)
-        
-        return {
-            drag,
-            downforce,
-            corneringForce,
-            totalLoad: Math.sqrt(downforce * downforce + corneringForce * corneringForce)
-        }
+        return (torque * gearRatio * finalDrive) / wheelRadius
     }
 
-    updateThermalModel(engineLoad, rpm, ambientTemp) {
-        const heatGeneration = engineLoad * rpm * 0.001
-        const cooling = this.calculateCoolingEffect(velocity)
-        const thermalMass = 100
+    mapPerformanceData(data) {
+        const mappedData = {
+            rpm: new Float32Array(1000),
+            power: new Float32Array(1000),
+            torque: new Float32Array(1000)
+        }
         
-        this.metrics.thermalData = this.metrics.thermalData.map((temp, idx) => {
-            const deltaTemp = (heatGeneration - cooling) / thermalMass
-            return temp + deltaTemp
+        for (let i = 0; i < 1000; i++) {
+            const rpm = i * (14000 / 1000)
+            mappedData.rpm[i] = rpm
+            mappedData.power[i] = this.powerCurve.getValue(rpm)
+            mappedData.torque[i] = this.torqueCurve.getValue(rpm)
+        }
+        
+        return mappedData
+    }
+
+    updateWithUpgrades(upgrades) {
+        this.powerCurve.applyModifiers(upgrades.power)
+        this.torqueCurve.applyModifiers(upgrades.torque)
+    }
+}
+
+class CurveCalculator {
+    constructor(type) {
+        this.type = type
+        this.basePoints = this.getBasePoints()
+        this.modifiers = []
+    }
+
+    getBasePoints() {
+        return this.type === 'power' ? [
+            { rpm: 0, value: 0 },
+            { rpm: 4000, value: 60 },
+            { rpm: 8000, value: 120 },
+            { rpm: 10000, value: 180 },
+            { rpm: 12000, value: 200 },
+            { rpm: 14000, value: 190 }
+        ] : [
+            { rpm: 0, value: 0 },
+            { rpm: 2000, value: 80 },
+            { rpm: 4000, value: 100 },
+            { rpm: 6000, value: 115 },
+            { rpm: 8000, value: 112 },
+            { rpm: 10000, value: 105 }
+        ]
+    }
+
+    getValue(rpm) {
+        let value = this.interpolate(rpm)
+        this.modifiers.forEach(mod => {
+            value *= mod.multiplier
         })
+        return value
     }
 
-    generatePerformanceReport() {
-        const report = {
-            maxPower: Math.max(...this.metrics.powerCurve),
-            maxTorque: Math.max(...this.metrics.torqueCurve),
-            powerToWeight: this.calculatePowerToWeight(),
-            accelerationTimes: this.calculateAccelerationTimes(),
-            brakingDistance: this.calculateBrakingDistance(),
-            corneringG: Math.max(...this.metrics.gForces),
-            thermalEfficiency: this.calculateThermalEfficiency(),
-            fuelConsumption: this.calculateFuelConsumption()
-        }
-
-        return report
-    }
-
-    calculateBoostPressure(rpm, throttle) {
-        const maxBoost = 2.5
-        const spoolThreshold = 3000
-        const spoolRate = 0.0001
+    interpolate(rpm) {
+        const points = this.basePoints
         
-        return maxBoost * (1 - Math.exp(-(rpm - spoolThreshold) * spoolRate)) * throttle
-    }
-
-    findPeakFrequency() {
-        let maxAmplitude = -Infinity
-        let peakFreq = 0
-        
-        for(let i = 0; i < this.fftSize/2; i++) {
-            if(this.dataArray[i] > maxAmplitude) {
-                maxAmplitude = this.dataArray[i]
-                peakFreq = i * (this.analyzer.context.sampleRate / this.fftSize)
+        for (let i = 0; i < points.length - 1; i++) {
+            if (rpm >= points[i].rpm && rpm <= points[i + 1].rpm) {
+                const t = (rpm - points[i].rpm) / (points[i + 1].rpm - points[i].rpm)
+                return points[i].value + t * (points[i + 1].value - points[i].value)
             }
         }
         
-        return peakFreq
+        return 0
+    }
+
+    applyModifiers(mods) {
+        this.modifiers = mods
     }
 }
+
+export default PerformanceMapper
