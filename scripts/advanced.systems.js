@@ -1,112 +1,147 @@
 class AdvancedSystems {
     constructor() {
         this.systems = {
-            abs: new ABSSystem(),
-            tcs: new TractionControlSystem(),
-            quickshifter: new QuickshifterSystem(),
-            wheelieControl: new WheelineControlSystem(),
-            launchControl: new LaunchControlSystem()
+            traction: 50,
+            abs: 50,
+            wheelie: 50,
+            launch: 50
         }
-        
-        this.initializeSystems()
-    }
 
-    initializeSystems() {
-        this.setupSensorData()
-        this.setupControlModules()
-        this.initializeIMU()
-    }
-
-    setupSensorData() {
-        this.sensorData = {
-            wheelSpeed: { front: 0, rear: 0 },
-            lean: { angle: 0, rate: 0 },
-            acceleration: { x: 0, y: 0, z: 0 },
-            throttle: 0,
-            brake: { front: 0, rear: 0 }
+        this.ridingModes = {
+            rain: {
+                traction: 80,
+                abs: 70,
+                wheelie: 30,
+                launch: 20
+            },
+            road: {
+                traction: 50,
+                abs: 50,
+                wheelie: 50,
+                launch: 50
+            },
+            sport: {
+                traction: 30,
+                abs: 30,
+                wheelie: 70,
+                launch: 70
+            },
+            race: {
+                traction: 20,
+                abs: 20,
+                wheelie: 90,
+                launch: 90
+            }
         }
-    }
 
-    setupControlModules() {
-        this.controlModules = {
-            powerMode: 1,
-            absLevel: 2,
-            tcsLevel: 2,
-            wheelieLevel: 2,
-            engineBrakeLevel: 2
+        this.telemetry = {
+            rpm: 0,
+            speed: 0,
+            gear: 1,
+            leanAngle: 0,
+            acceleration: 0,
+            brakeForce: 0
         }
-    }
 
-    initializeIMU() {
-        this.imuData = {
-            pitch: 0,
-            roll: 0,
-            yaw: 0,
-            acceleration: new THREE.Vector3(),
-            gyro: new THREE.Vector3()
-        }
-    }
-
-    update(deltaTime) {
-        this.updateSensorData()
-        this.updateIMU()
-        this.processSystems(deltaTime)
-    }
-
-    updateSensorData() {
-        this.sensorData.wheelSpeed.front = this.calculateWheelSpeed('front')
-        this.sensorData.wheelSpeed.rear = this.calculateWheelSpeed('rear')
-        this.sensorData.lean.angle = this.calculateLeanAngle()
-    }
-
-    updateIMU() {
-        this.imuData.pitch += this.imuData.gyro.x * 0.016
-        this.imuData.roll += this.imuData.gyro.y * 0.016
-        this.imuData.yaw += this.imuData.gyro.z * 0.016
-    }
-
-    processSystems(deltaTime) {
-        Object.values(this.systems).forEach(system => {
-            system.process(this.sensorData, deltaTime)
-        })
-    }
-
-    calculateWheelSpeed(wheel) {
-        const rpm = wheel === 'front' ? this.sensorData.wheelSpeed.front : this.sensorData.wheelSpeed.rear
-        return (rpm * Math.PI * 0.6604) / 60
-    }
-
-    calculateLeanAngle() {
-        return Math.atan2(this.imuData.acceleration.y, this.imuData.acceleration.z)
+        this.currentMode = 'road'
+        this.isSimulationActive = false
     }
 
     setRidingMode(mode) {
-        const modes = {
-            rain: { power: 3, abs: 3, tcs: 3, wheelie: 3 },
-            road: { power: 2, abs: 2, tcs: 2, wheelie: 2 },
-            sport: { power: 1, abs: 1, tcs: 1, wheelie: 1 },
-            track: { power: 1, abs: 1, tcs: 0, wheelie: 0 }
+        if (this.ridingModes[mode]) {
+            this.currentMode = mode
+            this.systems = { ...this.ridingModes[mode] }
         }
-        
-        const settings = modes[mode]
-        this.updateSystemSettings(settings)
     }
 
-    updateSystemSettings(settings) {
-        this.controlModules.powerMode = settings.power
-        this.controlModules.absLevel = settings.abs
-        this.controlModules.tcsLevel = settings.tcs
-        this.controlModules.wheelieLevel = settings.wheelie
+    updateSystem(system, value) {
+        if (system in this.systems) {
+            this.systems[system] = parseInt(value)
+        }
+    }
+
+    toggleSimulation(active) {
+        this.isSimulationActive = active
+        if (active) {
+            this.startTelemetryUpdate()
+        }
+    }
+
+    startTelemetryUpdate() {
+        if (!this.isSimulationActive) return
+
+        this.telemetry.rpm = this.calculateRPM()
+        this.telemetry.speed = this.calculateSpeed()
+        this.telemetry.gear = this.calculateGear()
+        this.telemetry.leanAngle = this.calculateLeanAngle()
+    }
+
+    calculateRPM() {
+        const baseRPM = this.telemetry.rpm
+        const acceleration = this.systems.launch / 100
+        const maxRPM = 14000
+        
+        let newRPM = baseRPM + (acceleration * 1000)
+        if (newRPM > maxRPM) newRPM = maxRPM
+
+        return newRPM
+    }
+
+    calculateSpeed() {
+        const wheelCircumference = 2 * Math.PI * 0.3
+        const rpmToSpeed = (this.telemetry.rpm / 60) * wheelCircumference * 3.6
+        return rpmToSpeed * (this.systems.traction / 100)
+    }
+
+    calculateGear() {
+        const speed = this.telemetry.speed
+        if (speed < 40) return 1
+        if (speed < 80) return 2
+        if (speed < 120) return 3
+        if (speed < 160) return 4
+        if (speed < 200) return 5
+        return 6
+    }
+
+    calculateLeanAngle() {
+        const maxLean = 55
+        const tractionInfluence = this.systems.traction / 100
+        return Math.sin(this.telemetry.speed / 200) * maxLean * tractionInfluence
+    }
+
+    processTractionControl(wheelSpeed, groundSpeed) {
+        const slipRatio = (wheelSpeed - groundSpeed) / groundSpeed
+        const tractionLimit = this.systems.traction / 100
+        return slipRatio > tractionLimit
+    }
+
+    processABS(wheelSpeed, groundSpeed) {
+        const slipRatio = (groundSpeed - wheelSpeed) / groundSpeed
+        const absThreshold = this.systems.abs / 100
+        return slipRatio > absThreshold
+    }
+
+    processWheelie(pitchAngle) {
+        const wheelieLimit = this.systems.wheelie / 100
+        return pitchAngle > wheelieLimit * 45
+    }
+
+    processLaunchControl(rpm, wheelSpeed) {
+        const launchLimit = this.systems.launch / 100
+        const maxLaunchRPM = 8000 + (launchLimit * 4000)
+        return rpm > maxLaunchRPM
+    }
+
+    getTelemetryData() {
+        return { ...this.telemetry }
     }
 
     getSystemStatus() {
-        return {
-            abs: this.systems.abs.getStatus(),
-            tcs: this.systems.tcs.getStatus(),
-            quickshifter: this.systems.quickshifter.getStatus(),
-            wheelieControl: this.systems.wheelieControl.getStatus(),
-            launchControl: this.systems.launchControl.getStatus()
-        }
+        return { ...this.systems }
+    }
+
+    getCurrentMode() {
+        return this.currentMode
     }
 }
 
