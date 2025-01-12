@@ -4,26 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Premium Motorcycle Performance Hub</title>
+    <link rel="icon" type="image/svg+xml" href="assets/icons/moto-logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Syncopate:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="main-container">
         <nav class="premium-nav">
-    <div class="nav-logo">
-        <img src="assets/icons/moto-logo.svg" alt="Performance Lab">
-    </div>
-    <div class="nav-links">
-        <a href="#models" class="nav-item active">Models</a>
-        <a href="#performance" class="nav-item">Performance</a>
-        <a href="#upgrades" class="nav-item">Upgrades</a>
-        <a href="#dyno" class="nav-item">Dyno</a>
-    </div>
-    <div class="nav-actions">
-        <button class="theme-toggle">🌙</button>
-        <button class="premium-btn">Upgrade Now</button>
-    </div>
-</nav>
+            <div class="nav-logo">
+                <img src="assets/icons/moto-logo.svg" alt="Performance Lab">
+            </div>
+            <div class="nav-links">
+                <a href="#models" class="nav-item active">Models</a>
+                <a href="#performance" class="nav-item">Performance</a>
+                <a href="#upgrades" class="nav-item">Upgrades</a>
+                <a href="#dyno" class="nav-item">Dyno</a>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle">🌙</button>
+                <button class="premium-btn">Upgrade Now</button>
+            </div>
+        </nav>
+
         <div class="webgl-container">
             <canvas id="motorcycle-canvas"></canvas>
             <div class="performance-overlay"></div>
@@ -58,6 +60,12 @@
                     </select>
                 </div>
 
+                <div class="bike-showcase">
+                    <img src="assets/images/r1m.jpg" alt="Yamaha R1M" class="bike-preview active" data-model="r1">
+                    <img src="assets/images/v4r.jpg" alt="Ducati V4R" class="bike-preview" data-model="v4">
+                    <img src="assets/images/zx10r.jpg" alt="Kawasaki ZX-10RR" class="bike-preview" data-model="zx10r">
+                </div>
+
                 <div class="performance-graphs">
                     <canvas id="torqueCurve"></canvas>
                     <canvas id="powerCurve"></canvas>
@@ -86,6 +94,12 @@
             </main>
 
             <aside class="upgrade-panel custom-scrollbar">
+                <div class="upgrade-categories">
+                    <button class="category-btn active" data-category="engine">Engine</button>
+                    <button class="category-btn" data-category="suspension">Suspension</button>
+                    <button class="category-btn" data-category="exhaust">Exhaust</button>
+                    <button class="category-btn" data-category="electronics">Electronics</button>
+                </div>
                 <div class="upgrade-tree"></div>
                 <div class="performance-impact">
                     <canvas id="performanceRadar"></canvas>
@@ -100,10 +114,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script src="scripts/shaders.js"></script>
-    <script src="scripts/particle-system.js"></script>
-    <script src="scripts/physics-engine.js"></script>
-    <script src="scripts/performance-mapper.js"></script>
-    <script src="scripts/advanced-systems.js"></script>
-    <script src="scripts/main.js"></script>
-</body>
-</html>
