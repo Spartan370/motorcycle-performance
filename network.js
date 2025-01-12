@@ -1,45 +1,101 @@
 class MotorcycleNetwork {
     constructor() {
         this.container = document.getElementById('mynetwork');
-        this.network = new vis.Network(this.container, graphData, networkOptions);
-        this.initializeEventListeners();
+        this.nodes = new vis.DataSet();
+        this.edges = new vis.DataSet();
+        this.selectedUpgrades = new Set();
+        this.totalCost = 0;
+        this.totalHPGain = 0;
+        
+        this.initializeNetwork();
+        this.bindEvents();
     }
 
-    initializeEventListeners() {
-        this.network.on("click", (params) => this.handleNodeClick(params));
-        this.network.on("hoverNode", (params) => this.handleNodeHover(params));
+    initializeNetwork() {
+        this.createNodes();
+        this.createEdges();
+        
+        const data = {
+            nodes: this.nodes,
+            edges: this.edges
+        };
+        
+        this.network = new vis.Network(this.container, data, networkConfig);
     }
 
-    handleNodeClick(params) {
-        if (params.nodes.length > 0) {
-            const nodeId = params.nodes[0];
-            const node = graphData.nodes.find(n => n.id === nodeId);
-            this.updateNodeInfo(node);
-        }
+    createNodes() {
+        Object.values(motorcycleData.bikes).forEach((bike, index) => {
+            this.nodes.add({
+                id: bike.name,
+                label: bike.name,
+                level: 0,
+                color: '#800000',
+                font: { size: 25 }
+            });
+
+            Object.values(bike.categories).forEach(category => {
+                const categoryId = `${bike.name}_${category.name}`;
+                this.nodes.add({
+                    id: categoryId,
+                    label: category.name,
+                    level: 1,
+                    color: '#000080'
+                });
+
+                category.upgrades.forEach(upgrade => {
+                    this.nodes.add({
+                        id: upgrade.id,
+                        label: `${upgrade.name}\n$${upgrade.cost}`,
+                        level: 2,
+                        color: this.getStageColor(upgrade.stage),
+                        upgrade: upgrade
+                    });
+                });
+            });
+        });
     }
 
-    handleNodeHover(params) {
-        const nodeId = params.node;
-        const node = graphData.nodes.find(n => n.id === nodeId);
-        this.container.style.cursor = node.level === 2 ? 'pointer' : 'default';
+    createEdges() {
+        Object.values(motorcycleData.bikes).forEach(bike => {
+            Object.values(bike.categories).forEach(category => {
+                const categoryId = `${bike.name}_${category.name}`;
+                this.edges.add({
+                    from: bike.name,
+                    to: categoryId
+                });
+
+                category.upgrades.forEach(upgrade => {
+                    this.edges.add({
+                        from: categoryId,
+                        to: upgrade.id
+                    });
+                });
+            });
+        });
     }
 
-    updateNodeInfo(node) {
-        const nodeInfo = document.getElementById('nodeInfo');
-        const nodeName = document.getElementById('nodeName');
-        const nodeDetails = document.getElementById('nodeDetails');
-        const performanceBar = document.getElementById('performanceBar');
-
-        if (node.level === 2) {
-            const performance = Math.floor(Math.random() * 15) + 5;
-            nodeName.textContent = node.label.split('\n')[0];
-            nodeDetails.textContent = `Stage ${Math.floor(Math.random() * 3) + 1} Upgrade
-                                     Installation Time: ${Math.floor(Math.random() * 5) + 1} hours
-                                     Performance Gain: +${performance}%`;
-            performanceBar.style.width = `${performance * 3}px`;
-            nodeInfo.style.display = 'block';
-        }
+    getStageColor(stage) {
+        const colors = {
+            1: '#000080',
+            2: '#800000',
+            3: '#4A0404'
+        };
+        return colors[stage] || '#808080';
     }
-}
 
-const motorcycleNetwork = new MotorcycleNetwork();
+    bindEvents() {
+        this.network.on("click", params => {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = this.nodes.get(nodeId);
+                
+                if (node.upgrade) {
+                    this.handleUpgradeSelection(node);
+                }
+            }
+        });
+
+        this.network.on("hoverNode", params => {
+            const node = this.nodes.get(params.node);
+            if (node.upgrade) {
+                this.showUpgradeDetails(
