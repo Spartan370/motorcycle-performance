@@ -3,56 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Motorcycle Performance Hub</title>
-    <link rel="icon" type="image/svg+xml" href="assets/icons/moto-logo.svg">
+    <title>Premium Motorcycle Configurator</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Syncopate:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/postprocessing@6.29.3/build/postprocessing.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
-    <div class="main-container">
-        <nav class="premium-nav">
-            <div class="nav-logo">
-                <img src="assets/icons/moto-logo.svg" alt="Performance Lab">
-            </div>
-            <div class="nav-links">
-                <a href="#models" class="nav-item active">Models</a>
-                <a href="#performance" class="nav-item">Performance</a>
-                <a href="#upgrades" class="nav-item">Upgrades</a>
-                <a href="#dyno" class="nav-item">Dyno</a>
-            </div>
-            <div class="nav-actions">
-                <button class="theme-toggle">🌙</button>
-                <button class="premium-btn">Upgrade Now</button>
-            </div>
-        </nav>
+    <div class="loading-screen">
+        <div class="loader"></div>
+        <div class="loading-progress">0%</div>
+    </div>
 
-        <div class="webgl-container">
-            <canvas id="motorcycle-canvas"></canvas>
-            <div class="performance-overlay"></div>
+    <nav class="premium-nav">
+        <div class="nav-logo">
+            <img src="assets/logo.png" alt="Logo">
         </div>
-        
-        <header class="premium-header">
-            <h1 class="title-text">MOTORCYCLE PERFORMANCE LAB</h1>
-            <div class="global-stats">
-                <div class="stat-item">
-                    <span class="stat-value" id="powerGain">+45</span>
-                    <span class="stat-label">HP GAIN</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="weightReduction">-12.4</span>
-                    <span class="stat-label">KG REDUCED</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="totalCost">$24,850</span>
-                    <span class="stat-label">INVESTMENT</span>
-                </div>
-            </div>
-        </header>
+        <div class="nav-links">
+            <a href="#models" class="nav-item active">Models</a>
+            <a href="#customize" class="nav-item">Customize</a>
+            <a href="#performance" class="nav-item">Performance</a>
+            <a href="#gallery" class="nav-item">Gallery</a>
+        </div>
+        <div class="nav-actions">
+            <button class="theme-toggle">🌙</button>
+            <button class="premium-btn">Go Premium</button>
+        </div>
+    </nav>
 
+    <div class="main-container">
         <div class="content-wrapper">
-            <aside class="bike-specs custom-scrollbar">
+            <div class="bike-specs custom-scrollbar">
                 <div class="model-selector">
-                    <h2>SELECT MODEL</h2>
                     <select id="bikeModel" class="premium-select">
                         <option value="r1">Yamaha R1M 2024</option>
                         <option value="v4">Ducati V4R 2024</option>
@@ -61,71 +45,234 @@
                 </div>
 
                 <div class="bike-showcase">
-                    <img src="assets/images/r1m.jpg" alt="Yamaha R1M" class="bike-preview active" data-model="r1">
-                    <img src="assets/images/v4r.jpg" alt="Ducati V4R" class="bike-preview" data-model="v4">
-                    <img src="assets/images/zx10r.jpg" alt="Kawasaki ZX-10RR" class="bike-preview" data-model="zx10r">
+                    <img src="assets/bikes/r1.jpg" class="bike-preview active" data-model="r1" alt="R1">
+                    <img src="assets/bikes/v4.jpg" class="bike-preview" data-model="v4" alt="V4">
+                    <img src="assets/bikes/zx10r.jpg" class="bike-preview" data-model="zx10r" alt="ZX10R">
+                </div>
+
+                <div class="performance-metrics">
+                    <div class="metric-card">
+                        <h3>Power Output</h3>
+                        <div class="metric-value" data-metric="power">200</div>
+                        <div class="metric-unit">HP</div>
+                        <div class="metric-graph"></div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Torque</h3>
+                        <div class="metric-value" data-metric="torque">115</div>
+                        <div class="metric-unit">Nm</div>
+                        <div class="metric-graph"></div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Weight</h3>
+                        <div class="metric-value" data-metric="weight">195</div>
+                        <div class="metric-unit">kg</div>
+                        <div class="metric-graph"></div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Handling</h3>
+                        <div class="metric-value" data-metric="handling">95</div>
+                        <div class="metric-unit">pts</div>
+                        <div class="metric-graph"></div>
+                    </div>
                 </div>
 
                 <div class="performance-graphs">
-                    <canvas id="torqueCurve"></canvas>
-                    <canvas id="powerCurve"></canvas>
-                    <canvas id="accelerationCurve"></canvas>
+                    <canvas id="powerCurve" class="performance-graph"></canvas>
+                    <canvas id="torqueCurve" class="performance-graph"></canvas>
+                    <canvas id="accelerationCurve" class="performance-graph"></canvas>
                 </div>
 
-                <div class="real-time-metrics">
-                    <div class="metric-container">
-                        <canvas id="realtimePerformance"></canvas>
+                <div class="telemetry-display">
+                    <div class="telemetry-grid">
+                        <div class="telemetry-cell">
+                            <span class="label">RPM</span>
+                            <span class="value" id="rpm-value">0</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="label">Speed</span>
+                            <span class="value" id="speed-value">0</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="label">Gear</span>
+                            <span class="value" id="gear-value">N</span>
+                        </div>
+                        <div class="telemetry-cell">
+                            <span class="label">Lean Angle</span>
+                            <span class="value" id="lean-value">0°</span>
+                        </div>
                     </div>
                 </div>
-            </aside>
 
-            <main class="model-viewer">
-                <div id="3dModel" class="model-container">
-                    <div class="loading-overlay">
-                        <div class="loading-spinner"></div>
+                <div class="system-controls">
+                    <div class="control-group">
+                        <h3>Riding Modes</h3>
+                        <div class="mode-selector">
+                            <button class="mode-btn active" data-mode="track">Track</button>
+                            <button class="mode-btn" data-mode="sport">Sport</button>
+                            <button class="mode-btn" data-mode="road">Road</button>
+                            <button class="mode-btn" data-mode="rain">Rain</button>
+                        </div>
                     </div>
+                    
+                    <div class="control-group">
+                        <h3>Advanced Systems</h3>
+                        <div class="system-toggles">
+                            <div class="system-toggle">
+                                <label>ABS</label>
+                                <input type="range" min="0" max="3" value="2" class="system-slider" data-system="abs">
+                                <div class="system-value">2</div>
+                            </div>
+                            <div class="system-toggle">
+                                <label>Traction Control</label>
+                                <input type="range" min="0" max="3" value="2" class="system-slider" data-system="tcs">
+                                <div class="system-value">2</div>
+                            </div>
+                            <div class="system-toggle">
+                                <label>Wheelie Control</label>
+                                <input type="range" min="0" max="3" value="2" class="system-slider" data-system="wheelie">
+                                <div class="system-value">2</div>
+                            </div>
+                            <div class="system-toggle">
+                                <label>Engine Brake</label>
+                                <input type="range" min="0" max="3" value="2" class="system-slider" data-system="engine-brake">
+                                <div class="system-value">2</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="model-container">
+                <div class="loading-overlay">
+                    <div class="loading-spinner"></div>
                 </div>
                 <div class="model-controls">
-                    <button class="control-btn" id="rotateLeft">⟲</button>
-                    <button class="control-btn" id="resetView">□</button>
-                    <button class="control-btn" id="rotateRight">⟳</button>
-                    <button class="control-btn" id="explodeView">✧</button>
+                    <button class="control-btn" data-control="rotate">🔄</button>
+                    <button class="control-btn" data-control="zoom">🔍</button>
+                    <button class="control-btn" data-control="lights">💡</button>
+                    <button class="control-btn" data-control="explode">💥</button>
                 </div>
-            </main>
+                <div class="view-modes">
+                    <button class="view-btn active" data-view="3d">3D</button>
+                    <button class="view-btn" data-view="xray">X-Ray</button>
+                    <button class="view-btn" data-view="wireframe">Wireframe</button>
+                </div>
+            </div>
 
-            <aside class="upgrade-panel custom-scrollbar">
+            <div class="upgrade-panel custom-scrollbar">
                 <div class="upgrade-categories">
                     <button class="category-btn active" data-category="engine">Engine</button>
                     <button class="category-btn" data-category="suspension">Suspension</button>
                     <button class="category-btn" data-category="exhaust">Exhaust</button>
                     <button class="category-btn" data-category="electronics">Electronics</button>
                 </div>
-                <div class="upgrade-tree"></div>
-                <div class="performance-impact">
-                    <canvas id="performanceRadar"></canvas>
+
+                <div class="upgrade-tree">
+                    <div class="upgrade-section active" data-category="engine">
+                        <div class="upgrade-item" data-upgrade="stage1">
+                            <h4>Stage 1 ECU Flash</h4>
+                            <p>+10 HP, +5 Nm</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="power" style="width: 20%"></div>
+                                <div class="stat-bar" data-stat="torque" style="width: 15%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="stage1">$800</button>
+                        </div>
+                        <div class="upgrade-item" data-upgrade="stage2">
+                            <h4>Stage 2 Performance Kit</h4>
+                            <p>+15 HP, +8 Nm</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="power" style="width: 30%"></div>
+                                <div class="stat-bar" data-stat="torque" style="width: 25%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="stage2">$2,500</button>
+                        </div>
+                        <div class="upgrade-item" data-upgrade="stage3">
+                            <h4>Stage 3 Race Package</h4>
+                            <p>+25 HP, +12 Nm</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="power" style="width: 50%"></div>
+                                <div class="stat-bar" data-stat="torque" style="width: 40%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="stage3">$5,000</button>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-section" data-category="suspension">
+                        <div class="upgrade-item" data-upgrade="springs">
+                            <h4>Race Springs</h4>
+                            <p>+10 Handling</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="handling" style="width: 20%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="springs">$600</button>
+                        </div>
+                        <div class="upgrade-item" data-upgrade="cartridge">
+                            <h4>Cartridge Kit</h4>
+                            <p>+25 Handling</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="handling" style="width: 50%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="cartridge">$2,200</button>
+                        </div>
+                        <div class="upgrade-item" data-upgrade="ohlins">
+                            <h4>Öhlins Package</h4>
+                            <p>+40 Handling</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="handling" style="width: 80%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="ohlins">$4,500</button>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-section" data-category="exhaust">
+                        <div class="upgrade-item" data-upgrade="slip_on">
+                            <h4>Slip-on Exhaust</h4>
+                            <p>+5 HP, -2 kg</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="power" style="width: 10%"></div>
+                                <div class="stat-bar" data-stat="weight" style="width: 15%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="slip_on">$1,200</button>
+                        </div>
+                        <div class="upgrade-item" data-upgrade="full_system">
+                            <h4>Full System</h4>
+                            <p>+12 HP, -4.5 kg</p>
+                            <div class="upgrade-stats">
+                                <div class="stat-bar" data-stat="power" style="width: 25%"></div>
+                                <div class="stat-bar" data-stat="weight" style="width: 35%"></div>
+                            </div>
+                            <button class="upgrade-btn" data-upgrade="full_system">$3,500</button>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-section" data-category="electronics">
+                        <div class="upgrade-item" data-upgrade="quickshifter">
+                            <h4>Quickshifter+</h4>
+                            <p>Seamless Shifting</p>
+                            <button class="upgrade-btn" data-upgrade="quickshifter">$800</button>
+                        </div>
+                        <div class="upgrade-item" data-upgrade="launch_control">
+                            <h4>Launch Control</h4>
+                            <p>Perfect Starts</p>
+                            <button class="upgrade-btn" data-upgrade="launch_control">$1,500</button>
+                        </div>
+                    </div>
                 </div>
-            </aside>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/postprocessing@6.29.3/build/postprocessing.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-<script src="scripts/bike-data.js"></script>
-<script src="scripts/model-viewer.js"></script>
-<script src="scripts/performance-graph.js"></script>
-<script src="scripts/ui-controller.js"></script>
-<script src="scripts/shaders.js"></script>
-<script src="scripts/particle-system.js"></script>
-<script src="scripts/physics-engine.js"></script>
-<script src="scripts/performance-mapper.js"></script>
-<script src="scripts/advanced-systems.js"></script>
-<script src="scripts/main.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/postprocessing@6.29.3/build/postprocessing.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
+    <script src="scripts/bike-data.js"></script>
+    <script src="scripts/model-viewer.js"></script>
+    <script src="scripts/performance-graph.js"></script>
+    <script src="scripts/ui-controller.js"></script>
     <script src="scripts/shaders.js"></script>
+    <script src="scripts/particle-system.js"></script>
+    <script src="scripts/physics-engine.js"></script>
+    <script src="scripts/performance-mapper.js"></script>
+    <script src="scripts/advanced-systems.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
