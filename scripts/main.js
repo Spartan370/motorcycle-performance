@@ -1,158 +1,132 @@
-class PremiumMotorcycleApp {
-    constructor() {
-        this.initializeUI()
-        this.setupEventListeners()
-        this.loadBikeData()
-        this.setupThemeToggle()
-        this.initializeGraphs()
-        this.initializeModelViewer()
-        this.initializePerformanceMetrics()
+document.addEventListener('DOMContentLoaded', () => {
+    const modelViewer = new ModelViewer()
+    const performanceGraph = new PerformanceGraph()
+    const uiController = new UIController()
+    const particleSystem = new ParticleSystem()
+    const physicsEngine = new PhysicsEngine()
+    const performanceMapper = new PerformanceMapper()
+    const advancedSystems = new AdvancedSystems()
+
+    let currentBike = 'r1'
+    let isSimulationRunning = false
+    let lastFrameTime = 0
+
+    function initializeApplication() {
+        loadInitialBikeData()
+        setupEventListeners()
+        startRenderLoop()
+        initializePhysics()
     }
 
-    initializeUI() {
-        this.navItems = document.querySelectorAll('.nav-item')
-        this.bikeModels = document.querySelectorAll('.bike-preview')
-        this.categoryBtns = document.querySelectorAll('.category-btn')
-        this.modelSelector = document.getElementById('bikeModel')
-        this.upgradeButtons = document.querySelectorAll('.upgrade-btn')
-        this.performanceDisplays = document.querySelectorAll('.performance-metric')
-        
-        this.setupNavHighlight()
-        this.initializeTooltips()
+    function loadInitialBikeData() {
+        const bikeData = BikeData[currentBike]
+        modelViewer.loadModel(bikeData.modelPath)
+        performanceGraph.updateGraphs(bikeData.performance)
+        uiController.updatePerformanceStats(bikeData.stats)
     }
 
-    setupEventListeners() {
-        this.navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault()
-                this.handleNavigation(item)
+    function setupEventListeners() {
+        document.getElementById('bikeModel').addEventListener('change', (e) => {
+            currentBike = e.target.value
+            loadInitialBikeData()
+        })
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mode = e.target.dataset.mode
+                advancedSystems.setRidingMode(mode)
+                updateSystemDisplays()
             })
         })
 
-        this.bikeModels.forEach(model => {
-            model.addEventListener('click', () => this.switchBikeModel(model))
+        document.querySelectorAll('.system-slider').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const system = e.target.dataset.system
+                const value = e.target.value
+                advancedSystems.updateSystem(system, value)
+                updateSystemDisplays()
+            })
         })
 
-        this.categoryBtns.forEach(btn => {
-            btn.addEventListener('click', () => this.switchCategory(btn))
-        })
-
-        this.modelSelector.addEventListener('change', (e) => {
-            this.updateBikeModel(e.target.value)
-        })
-
-        this.upgradeButtons.forEach(btn => {
-            btn.addEventListener('click', () => this.handleUpgrade(btn.dataset.upgrade))
-        })
-
-        window.addEventListener('resize', () => {
-            this.handleResize()
-        })
-
-        setInterval(() => {
-            this.updatePerformanceMetrics()
-        }, 1000 / 60)
-    }
-
-    handleNavigation(item) {
-        this.navItems.forEach(nav => nav.classList.remove('active'))
-        item.classList.add('active')
-        
-        const section = item.getAttribute('href').substring(1)
-        this.loadSectionContent(section)
-    }
-
-    switchBikeModel(model) {
-        this.bikeModels.forEach(bike => bike.classList.remove('active'))
-        model.classList.add('active')
-        
-        const modelId = model.dataset.model
-        this.updateModelViewer(modelId)
-        this.updatePerformanceGraphs(modelId)
-        this.resetUpgrades()
-    }
-
-    updateModelViewer(modelId) {
-        this.showLoadingSpinner()
-        this.modelViewer.loadModel(`models/${modelId}.glb`, () => {
-            this.hideLoadingSpinner()
-            this.updateSpecs(modelId)
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const view = e.target.dataset.view
+                modelViewer.setViewMode(view)
+            })
         })
     }
 
-    updatePerformanceGraphs(modelId) {
-        const performanceData = this.bikeData[modelId].performance
-        this.powerGraph.updateData(performanceData.powerCurve)
-        this.torqueGraph.updateData(performanceData.torqueCurve)
-        this.accelerationGraph.updateData(performanceData.accelerationCurve)
-    }
+    function startRenderLoop(timestamp = 0) {
+        const deltaTime = (timestamp - lastFrameTime) / 1000
+        lastFrameTime = timestamp
 
-    handleUpgrade(upgradeId) {
-        const upgrade = this.upgradeData[upgradeId]
-        if (this.canApplyUpgrade(upgrade)) {
-            this.applyUpgrade(upgrade)
-            this.updateTotalStats()
-            this.updateVisuals(upgrade)
+        if (isSimulationRunning) {
+            updateSimulation(deltaTime)
         }
+
+        modelViewer.render()
+        particleSystem.update(deltaTime)
+        updateTelemetry()
+
+        requestAnimationFrame(startRenderLoop)
     }
 
-    updatePerformanceMetrics() {
-        const metrics = this.calculateCurrentPerformance()
-        this.performanceDisplays.forEach(display => {
-            const metric = display.dataset.metric
-            display.textContent = metrics[metric].toFixed(1)
+    function initializePhysics() {
+        const bikeData = BikeData[currentBike]
+        physicsEngine.createMotorcyclePhysics(bikeData.physics)
+    }
+
+    function updateSimulation(deltaTime) {
+        physicsEngine.update(deltaTime)
+        const physicsData = physicsEngine.getSimulationData()
+        modelViewer.updateModelPosition(physicsData.position, physicsData.rotation)
+        
+        const performance = performanceMapper.calculatePerformance(
+            physicsData.rpm,
+            physicsData.throttle,
+            physicsData.gear
+        )
+        
+        updatePerformanceDisplays(performance)
+    }
+
+    function updateTelemetry() {
+        const telemetry = advancedSystems.getTelemetryData()
+        document.getElementById('rpm-value').textContent = Math.round(telemetry.rpm)
+        document.getElementById('speed-value').textContent = Math.round(telemetry.speed)
+        document.getElementById('gear-value').textContent = telemetry.gear
+        document.getElementById('lean-value').textContent = `${telemetry.leanAngle.toFixed(1)}°`
+    }
+
+    function updateSystemDisplays() {
+        const systemStatus = advancedSystems.getSystemStatus()
+        Object.entries(systemStatus).forEach(([system, value]) => {
+            const display = document.querySelector(`[data-system="${system}"] + .system-value`)
+            if (display) display.textContent = value
         })
     }
 
-    calculateCurrentPerformance() {
-        return {
-            power: this.basePower + this.powerGain,
-            torque: this.baseTorque + this.torqueGain,
-            weight: this.baseWeight + this.weightReduction,
-            handling: this.baseHandling + this.handlingImprovement
+    function updatePerformanceDisplays(performance) {
+        performanceGraph.updateGraphs({
+            power: performance.power,
+            torque: performance.torque,
+            acceleration: performance.acceleration
+        })
+
+        document.querySelectorAll('.metric-value').forEach(metric => {
+            const type = metric.dataset.metric
+            if (performance[type]) {
+                metric.textContent = Math.round(performance[type])
+            }
+        })
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            isSimulationRunning = !isSimulationRunning
+            advancedSystems.toggleSimulation(isSimulationRunning)
         }
-    }
+    })
 
-    showLoadingSpinner() {
-        document.querySelector('.loading-overlay').style.display = 'flex'
-    }
-
-    hideLoadingSpinner() {
-        document.querySelector('.loading-overlay').style.display = 'none'
-    }
-
-    handleResize() {
-        this.modelViewer.updateDimensions()
-        this.powerGraph.resize()
-        this.torqueGraph.resize()
-        this.accelerationGraph.resize()
-    }
-
-    setupThemeToggle() {
-        const themeToggle = document.querySelector('.theme-toggle')
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme')
-            themeToggle.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙'
-            this.updateThemeColors()
-        })
-    }
-
-    updateThemeColors() {
-        const isDark = document.body.classList.contains('dark-theme')
-        const colors = isDark ? this.darkThemeColors : this.lightThemeColors
-        document.documentElement.style.setProperty('--primary-color', colors.primary)
-        document.documentElement.style.setProperty('--secondary-color', colors.secondary)
-        document.documentElement.style.setProperty('--background-dark', colors.background)
-    }
-
-    initializeTooltips() {
-        const tooltips = document.querySelectorAll('[data-tooltip]')
-        tooltips.forEach(element => {
-            new Tooltip(element)
-        })
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new PremiumMotorcycleApp()
+    initializeApplication()
 })
