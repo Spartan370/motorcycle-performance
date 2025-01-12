@@ -3,76 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Motorcycle Performance Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <title>Premium Motorcycle Performance Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Syncopate:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/vis-network.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div class="main-container">
         <header class="premium-header">
-            <h1>MOTORCYCLE PERFORMANCE ECOSYSTEM</h1>
-            <div class="performance-stats">
+            <h1 class="title-text">MOTORCYCLE PERFORMANCE LAB</h1>
+            <div class="global-stats">
                 <div class="stat-item">
-                    <span class="stat-value" id="powerGain">0</span>
+                    <span class="stat-value" id="powerGain">+45</span>
                     <span class="stat-label">HP GAIN</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="totalCost">$0</span>
-                    <span class="stat-label">TOTAL COST</span>
+                    <span class="stat-value" id="weightReduction">-12.4</span>
+                    <span class="stat-label">KG REDUCED</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalCost">$24,850</span>
+                    <span class="stat-label">INVESTMENT</span>
                 </div>
             </div>
         </header>
 
-        <div id="mynetwork"></div>
+        <div class="content-wrapper">
+            <aside class="bike-specs">
+                <div class="model-selector">
+                    <h2>SELECT MODEL</h2>
+                    <select id="bikeModel" class="premium-select">
+                        <option value="r1">Yamaha R1M 2024</option>
+                        <option value="v4">Ducati V4R 2024</option>
+                        <option value="zx10r">Kawasaki ZX-10RR 2024</option>
+                    </select>
+                </div>
 
-        <div class="controls-panel">
-            <div class="upgrade-stages">
-                <h2>UPGRADE STAGES</h2>
-                <div class="stage-list">
-                    <div class="stage-item">
-                        <div class="stage-color stage1"></div>
-                        <span>Stage 1: Basic Performance</span>
+                <div class="specs-display">
+                    <div class="spec-group">
+                        <h3>PERFORMANCE METRICS</h3>
+                        <div class="spec-grid">
+                            <div class="spec-item">
+                                <span class="spec-label">Base Power</span>
+                                <span class="spec-value">200 HP</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Torque</span>
+                                <span class="spec-value">113 Nm</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Power/Weight</span>
+                                <span class="spec-value">0.98:1</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stage-item">
-                        <div class="stage-color stage2"></div>
-                        <span>Stage 2: Advanced Tuning</span>
-                    </div>
-                    <div class="stage-item">
-                        <div class="stage-color stage3"></div>
-                        <span>Stage 3: Race Spec</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="upgrade-details" id="upgradeDetails">
-            <h3 class="detail-title">UPGRADE SPECIFICATIONS</h3>
-            <div class="detail-content">
-                <div class="detail-row">
-                    <span class="detail-label">Component:</span>
-                    <span class="detail-value" id="componentName"></span>
+                    <div class="spec-group">
+                        <h3>CURRENT UPGRADES</h3>
+                        <div class="upgrade-list" id="activeUpgrades">
+                        </div>
+                    </div>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Installation Time:</span>
-                    <span class="detail-value" id="installTime"></span>
+            </aside>
+
+            <main class="model-viewer">
+                <div id="3dModel" class="model-container">
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Performance Gain:</span>
-                    <span class="detail-value" id="perfGain"></span>
+                <div class="model-controls">
+                    <button class="control-btn" id="rotateLeft">⟲</button>
+                    <button class="control-btn" id="resetView">□</button>
+                    <button class="control-btn" id="rotateRight">⟳</button>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Compatibility:</span>
-                    <span class="detail-value" id="compatibility"></span>
+            </main>
+
+            <aside class="upgrade-panel">
+                <div class="upgrade-categories">
+                    <button class="category-btn active" data-category="engine">ENGINE</button>
+                    <button class="category-btn" data-category="suspension">SUSPENSION</button>
+                    <button class="category-btn" data-category="brakes">BRAKES</button>
+                    <button class="category-btn" data-category="aero">AERODYNAMICS</button>
                 </div>
-                <div class="performance-bar-container">
-                    <div class="performance-bar" id="performanceBar"></div>
+
+                <div class="upgrade-options">
                 </div>
-            </div>
+
+                <div class="performance-impact">
+                    <h3>PERFORMANCE IMPACT</h3>
+                    <div class="impact-grid">
+                        <div class="impact-item">
+                            <span class="impact-label">Acceleration</span>
+                            <div class="impact-bar" style="--progress: 85%"></div>
+                        </div>
+                        <div class="impact-item">
+                            <span class="impact-label">Handling</span>
+                            <div class="impact-bar" style="--progress: 92%"></div>
+                        </div>
+                        <div class="impact-item">
+                            <span class="impact-label">Braking</span>
+                            <div class="impact-bar" style="--progress: 78%"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
-    <script src="data.js"></script>
-    <script src="network.js"></script>
 </body>
 </html>
