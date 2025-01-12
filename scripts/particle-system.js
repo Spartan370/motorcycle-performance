@@ -1,137 +1,119 @@
-class MotorcycleParticleSystem {
-    constructor(scene) {
-        this.scene = scene
-        this.particles = new Map()
-        this.emitters = new Map()
-        this.gpuCompute = new GPUComputationRenderer(512, 512, renderer)
-        
-        this.initializeComputeShaders()
-        this.createParticleSystems()
-    }
-
-    initializeComputeShaders() {
-        const positionVariable = this.gpuCompute.addVariable(
-            'texturePosition',
-            `
-            uniform float time;
-            uniform float deltaTime;
-            void main() {
-                vec2 uv = gl_FragCoord.xy / resolution.xy;
-                vec4 tmpPos = texture2D(texturePosition, uv);
-                vec3 position = tmpPos.xyz;
-                vec3 velocity = texture2D(textureVelocity, uv).xyz;
-                position += velocity * deltaTime;
-                gl_FragColor = vec4(position, 1.0);
-            }
-            `,
-            this.gpuCompute.createTexture()
-        )
-
-        const velocityVariable = this.gpuCompute.addVariable(
-            'textureVelocity',
-            `
-            uniform float time;
-            uniform float speedFactor;
-            uniform vec3 mousePos;
-            uniform float turbulence;
-            
-            const float width = resolution.x;
-            const float height = resolution.y;
-            
-            float rand(vec2 co) {
-                return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-            }
-            
-            void main() {
-                vec2 uv = gl_FragCoord.xy / resolution.xy;
-                vec3 position = texture2D(texturePosition, uv).xyz;
-                vec3 velocity = texture2D(textureVelocity, uv).xyz;
-                
-                float dx = rand(uv + time) - 0.5;
-                float dy = rand(uv + time + 1.0) - 0.5;
-                float dz = rand(uv + time + 2.0) - 0.5;
-                
-                velocity += vec3(dx, dy, dz) * turbulence * deltaTime;
-                velocity *= 0.99;
-                
-                gl_FragColor = vec4(velocity, 1.0);
-            }
-            `,
-            this.gpuCompute.createTexture()
-        )
-
-        this.gpuCompute.init()
-    }
-
-    createParticleSystems() {
-        this.createExhaustSystem()
-        this.createTireSmoke()
-        this.createAerodynamicFlow()
-    }
-
-    createExhaustSystem() {
-        const exhaustGeometry = new THREE.BufferGeometry()
-        const exhaustParticles = 10000
-        const positions = new Float32Array(exhaustParticles * 3)
-        const colors = new Float32Array(exhaustParticles * 3)
-        const sizes = new Float32Array(exhaustParticles)
-        const opacities = new Float32Array(exhaustParticles)
-
-        for(let i = 0; i < exhaustParticles; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 0.1
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 0.1
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 0.1
-            
-            colors[i * 3] = 0.6 + Math.random() * 0.4
-            colors[i * 3 + 1] = 0.2 + Math.random() * 0.2
-            colors[i * 3 + 2] = 0.1
-            
-            sizes[i] = Math.random() * 2
-            opacities[i] = Math.random()
-        }
-
-        exhaustGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-        exhaustGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-        exhaustGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
-        exhaustGeometry.setAttribute('opacity', new THREE.BufferAttribute(opacities, 1))
-
-        const exhaustMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                pointTexture: { value: new THREE.TextureLoader().load('textures/exhaust_particle.png') }
-            },
-            vertexShader: exhaustVertexShader,
-            fragmentShader: exhaustFragmentShader,
+class ParticleSystem {
+    constructor() {
+        this.particles = []
+        this.maxParticles = 1000
+        this.emissionRate = 60
+        this.particleGeometry = new THREE.BufferGeometry()
+        this.particleMaterial = new THREE.PointsMaterial({
+            size: 0.05,
+            map: this.createParticleTexture(),
             blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true
+            transparent: true,
+            depthWrite: false
         })
-
-        this.exhaustSystem = new THREE.Points(exhaustGeometry, exhaustMaterial)
-        this.scene.add(this.exhaustSystem)
+        
+        this.initialize()
     }
 
-    updateParticles(deltaTime, engineLoad, speed) {
-        this.gpuCompute.compute()
+    initialize() {
+        this.positions = new Float32Array(this.maxParticles * 3)
+        this.velocities = new Float32Array(this.maxParticles * 3)
+        this.colors = new Float32Array(this.maxParticles * 3)
+        this.lifetimes = new Float32Array(this.maxParticles)
         
-        const exhaustOpacities = this.exhaustSystem.geometry.attributes.opacity
-        const exhaustSizes = this.exhaustSystem.geometry.attributes.size
-        const exhaustPositions = this.exhaustSystem.geometry.attributes.position
+        this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
+        this.particleGeometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3))
         
-        for(let i = 0; i < exhaustOpacities.count; i++) {
-            exhaustOpacities.array[i] *= 0.96
+        this.particleSystem = new THREE.Points(this.particleGeometry, this.particleMaterial)
+    }
+
+    createParticleTexture() {
+        const canvas = document.createElement('canvas')
+        canvas.width = 32
+        canvas.height = 32
+        
+        const context = canvas.getContext('2d')
+        const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16)
+        gradient.addColorStop(0, 'rgba(255,255,255,1)')
+        gradient.addColorStop(1, 'rgba(255,255,255,0)')
+        
+        context.fillStyle = gradient
+        context.fillRect(0, 0, 32, 32)
+        
+        const texture = new THREE.Texture(canvas)
+        texture.needsUpdate = true
+        return texture
+    }
+
+    emitParticles(position, color, count) {
+        for (let i = 0; i < count; i++) {
+            const index = this.particles.length
+            if (index >= this.maxParticles) break
             
-            if(exhaustOpacities.array[i] < 0.01) {
-                this.resetExhaustParticle(i, engineLoad)
-            }
+            this.positions[index * 3] = position.x
+            this.positions[index * 3 + 1] = position.y
+            this.positions[index * 3 + 2] = position.z
             
-            exhaustPositions.array[i * 3] += (Math.random() - 0.5) * 0.01
-            exhaustPositions.array[i * 3 + 1] += speed * 0.001
-            exhaustPositions.array[i * 3 + 2] += (Math.random() - 0.5) * 0.01
+            this.velocities[index * 3] = (Math.random() - 0.5) * 0.1
+            this.velocities[index * 3 + 1] = Math.random() * 0.1
+            this.velocities[index * 3 + 2] = (Math.random() - 0.5) * 0.1
+            
+            this.colors[index * 3] = color.r
+            this.colors[index * 3 + 1] = color.g
+            this.colors[index * 3 + 2] = color.b
+            
+            this.lifetimes[index] = 1.0
+            
+            this.particles.push({
+                index: index,
+                lifetime: 1.0
+            })
         }
         
-        exhaustOpacities.needsUpdate = true
-        exhaustSizes.needsUpdate = true
-        exhaustPositions.needsUpdate = true
+        this.particleGeometry.attributes.position.needsUpdate = true
+        this.particleGeometry.attributes.color.needsUpdate = true
+    }
+
+    update(deltaTime) {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i]
+            const index = particle.index
+            
+            particle.lifetime -= deltaTime
+            
+            if (particle.lifetime <= 0) {
+                this.particles.splice(i, 1)
+                continue
+            }
+            
+            this.positions[index * 3] += this.velocities[index * 3]
+            this.positions[index * 3 + 1] += this.velocities[index * 3 + 1]
+            this.positions[index * 3 + 2] += this.velocities[index * 3 + 2]
+            
+            const alpha = particle.lifetime
+            this.colors[index * 3] *= alpha
+            this.colors[index * 3 + 1] *= alpha
+            this.colors[index * 3 + 2] *= alpha
+        }
+        
+        this.particleGeometry.attributes.position.needsUpdate = true
+        this.particleGeometry.attributes.color.needsUpdate = true
+    }
+
+    createExhaustEffect(position) {
+        const color = new THREE.Color(0xff3300)
+        this.emitParticles(position, color, 5)
+    }
+
+    createSparkEffect(position) {
+        const color = new THREE.Color(0xffff00)
+        this.emitParticles(position, color, 20)
+    }
+
+    createNitroEffect(position) {
+        const color = new THREE.Color(0x00ffff)
+        this.emitParticles(position, color, 30)
     }
 }
+
+export default ParticleSystem
