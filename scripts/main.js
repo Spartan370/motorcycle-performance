@@ -1,133 +1,158 @@
-class MotorcyclePerformanceApp {
+class PremiumMotorcycleApp {
     constructor() {
-        this.scene = new THREE.Scene()
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-        
-        this.physicsEngine = new MotorcyclePhysicsEngine()
-        this.particleSystem = new MotorcycleParticleSystem(this.scene)
-        this.performanceMapper = new PerformanceMapper()
-        
-        this.clock = new THREE.Clock()
-        this.controls = {}
-        this.activeUpgrades = new Set()
-        
-        this.initialize()
-    }
-
-    initialize() {
-        this.setupRenderer()
-        this.setupLighting()
-        this.loadMotorcycleModel()
-        this.initializePostProcessing()
+        this.initializeUI()
         this.setupEventListeners()
-        this.animate()
+        this.loadBikeData()
+        this.setupThemeToggle()
+        this.initializeGraphs()
+        this.initializeModelViewer()
+        this.initializePerformanceMetrics()
     }
 
-    setupRenderer() {
-        this.renderer.setPixelRatio(window.devicePixelRatio)
-        this.renderer.setSize(window.innerWidth, window.innerHeight)
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-        this.renderer.toneMappingExposure = 1.5
-        this.renderer.shadowMap.enabled = true
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-        document.querySelector('.webgl-container').appendChild(this.renderer.domElement)
+    initializeUI() {
+        this.navItems = document.querySelectorAll('.nav-item')
+        this.bikeModels = document.querySelectorAll('.bike-preview')
+        this.categoryBtns = document.querySelectorAll('.category-btn')
+        this.modelSelector = document.getElementById('bikeModel')
+        this.upgradeButtons = document.querySelectorAll('.upgrade-btn')
+        this.performanceDisplays = document.querySelectorAll('.performance-metric')
+        
+        this.setupNavHighlight()
+        this.initializeTooltips()
     }
 
-    loadMotorcycleModel() {
-        const loader = new THREE.GLTFLoader()
-        loader.load('models/motorcycle.glb', (gltf) => {
-            this.motorcycle = gltf.scene
-            this.setupMaterialsAndShaders()
-            this.scene.add(this.motorcycle)
-            this.initializePhysicsBody()
+    setupEventListeners() {
+        this.navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault()
+                this.handleNavigation(item)
+            })
+        })
+
+        this.bikeModels.forEach(model => {
+            model.addEventListener('click', () => this.switchBikeModel(model))
+        })
+
+        this.categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.switchCategory(btn))
+        })
+
+        this.modelSelector.addEventListener('change', (e) => {
+            this.updateBikeModel(e.target.value)
+        })
+
+        this.upgradeButtons.forEach(btn => {
+            btn.addEventListener('click', () => this.handleUpgrade(btn.dataset.upgrade))
+        })
+
+        window.addEventListener('resize', () => {
+            this.handleResize()
+        })
+
+        setInterval(() => {
+            this.updatePerformanceMetrics()
+        }, 1000 / 60)
+    }
+
+    handleNavigation(item) {
+        this.navItems.forEach(nav => nav.classList.remove('active'))
+        item.classList.add('active')
+        
+        const section = item.getAttribute('href').substring(1)
+        this.loadSectionContent(section)
+    }
+
+    switchBikeModel(model) {
+        this.bikeModels.forEach(bike => bike.classList.remove('active'))
+        model.classList.add('active')
+        
+        const modelId = model.dataset.model
+        this.updateModelViewer(modelId)
+        this.updatePerformanceGraphs(modelId)
+        this.resetUpgrades()
+    }
+
+    updateModelViewer(modelId) {
+        this.showLoadingSpinner()
+        this.modelViewer.loadModel(`models/${modelId}.glb`, () => {
+            this.hideLoadingSpinner()
+            this.updateSpecs(modelId)
         })
     }
 
-    setupMaterialsAndShaders() {
-        const paintMaterial = new THREE.ShaderMaterial(motorcyclePaintShader)
-        const carbonMaterial = new THREE.ShaderMaterial(carbonFiberShader)
-        
-        this.motorcycle.traverse((child) => {
-            if (child.isMesh) {
-                if (child.name.includes('Body')) {
-                    child.material = paintMaterial
-                } else if (child.name.includes('Carbon')) {
-                    child.material = carbonMaterial
-                }
-            }
-        })
+    updatePerformanceGraphs(modelId) {
+        const performanceData = this.bikeData[modelId].performance
+        this.powerGraph.updateData(performanceData.powerCurve)
+        this.torqueGraph.updateData(performanceData.torqueCurve)
+        this.accelerationGraph.updateData(performanceData.accelerationCurve)
     }
 
-    initializePostProcessing() {
-        const renderPass = new RenderPass(this.scene, this.camera)
-        const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.5, 0.4, 0.85
-        )
-        
-        this.composer = new EffectComposer(this.renderer)
-        this.composer.addPass(renderPass)
-        this.composer.addPass(bloomPass)
-    }
-
-    updatePerformance() {
-        const engineState = {
-            rpm: this.controls.throttle * 10000,
-            load: this.controls.throttle,
-            temperature: this.performanceMapper.metrics.thermalData[0]
+    handleUpgrade(upgradeId) {
+        const upgrade = this.upgradeData[upgradeId]
+        if (this.canApplyUpgrade(upgrade)) {
+            this.applyUpgrade(upgrade)
+            this.updateTotalStats()
+            this.updateVisuals(upgrade)
         }
-        
-        const performance = this.performanceMapper.calculateRealTimePerformance(
-            engineState.rpm,
-            engineState.load,
-            engineState.temperature
-        )
-        
-        this.updateTelemetryDisplays(performance)
-        this.updateParticleSystems(performance)
     }
 
-    updatePhysics() {
-        const deltaTime = this.clock.getDelta()
-        const physicsState = this.physicsEngine.update(deltaTime)
-        
-        this.motorcycle.position.copy(physicsState.chassis.position)
-        this.motorcycle.quaternion.copy(physicsState.chassis.quaternion)
-        
-        this.updateWheelsAndSuspension(physicsState)
-    }
-
-    animate() {
-        requestAnimationFrame(() => this.animate())
-        
-        const deltaTime = this.clock.getDelta()
-        const elapsedTime = this.clock.getElapsedTime()
-        
-        this.updatePhysics()
-        this.updatePerformance()
-        this.particleSystem.updateParticles(deltaTime, this.controls.throttle, this.physicsEngine.getSpeed())
-        
-        this.updateShaderUniforms(elapsedTime)
-        this.composer.render()
-    }
-
-    updateShaderUniforms(time) {
-        this.motorcycle.traverse((child) => {
-            if (child.material && child.material.uniforms) {
-                child.material.uniforms.time.value = time
-            }
+    updatePerformanceMetrics() {
+        const metrics = this.calculateCurrentPerformance()
+        this.performanceDisplays.forEach(display => {
+            const metric = display.dataset.metric
+            display.textContent = metrics[metric].toFixed(1)
         })
     }
 
-    handleUpgrade(upgradeType) {
-        if (this.activeUpgrades.has(upgradeType)) return
-        
-        this.activeUpgrades.add(upgradeType)
-        this.applyUpgradeEffects(upgradeType)
-        this.updateVisuals(upgradeType)
-        this.recalculatePerformanceMetrics()
+    calculateCurrentPerformance() {
+        return {
+            power: this.basePower + this.powerGain,
+            torque: this.baseTorque + this.torqueGain,
+            weight: this.baseWeight + this.weightReduction,
+            handling: this.baseHandling + this.handlingImprovement
+        }
+    }
+
+    showLoadingSpinner() {
+        document.querySelector('.loading-overlay').style.display = 'flex'
+    }
+
+    hideLoadingSpinner() {
+        document.querySelector('.loading-overlay').style.display = 'none'
+    }
+
+    handleResize() {
+        this.modelViewer.updateDimensions()
+        this.powerGraph.resize()
+        this.torqueGraph.resize()
+        this.accelerationGraph.resize()
+    }
+
+    setupThemeToggle() {
+        const themeToggle = document.querySelector('.theme-toggle')
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme')
+            themeToggle.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙'
+            this.updateThemeColors()
+        })
+    }
+
+    updateThemeColors() {
+        const isDark = document.body.classList.contains('dark-theme')
+        const colors = isDark ? this.darkThemeColors : this.lightThemeColors
+        document.documentElement.style.setProperty('--primary-color', colors.primary)
+        document.documentElement.style.setProperty('--secondary-color', colors.secondary)
+        document.documentElement.style.setProperty('--background-dark', colors.background)
+    }
+
+    initializeTooltips() {
+        const tooltips = document.querySelectorAll('[data-tooltip]')
+        tooltips.forEach(element => {
+            new Tooltip(element)
+        })
     }
 }
 
-const app = new MotorcyclePerformanceApp()
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new PremiumMotorcycleApp()
+})
