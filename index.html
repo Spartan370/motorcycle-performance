@@ -7,9 +7,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Syncopate:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/postprocessing@6.29.3/build/postprocessing.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
     <div class="main-container">
+        <div class="webgl-container">
+            <canvas id="motorcycle-canvas"></canvas>
+            <div class="performance-overlay"></div>
+        </div>
+        
         <header class="premium-header">
             <h1 class="title-text">MOTORCYCLE PERFORMANCE LAB</h1>
             <div class="global-stats">
@@ -29,7 +37,7 @@
         </header>
 
         <div class="content-wrapper">
-            <aside class="bike-specs">
+            <aside class="bike-specs custom-scrollbar">
                 <div class="model-selector">
                     <h2>SELECT MODEL</h2>
                     <select id="bikeModel" class="premium-select">
@@ -39,73 +47,47 @@
                     </select>
                 </div>
 
-                <div class="specs-display">
-                    <div class="spec-group">
-                        <h3>PERFORMANCE METRICS</h3>
-                        <div class="spec-grid">
-                            <div class="spec-item">
-                                <span class="spec-label">Base Power</span>
-                                <span class="spec-value">200 HP</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Torque</span>
-                                <span class="spec-value">113 Nm</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Power/Weight</span>
-                                <span class="spec-value">0.98:1</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="performance-graphs">
+                    <canvas id="torqueCurve"></canvas>
+                    <canvas id="powerCurve"></canvas>
+                    <canvas id="accelerationCurve"></canvas>
+                </div>
 
-                    <div class="spec-group">
-                        <h3>CURRENT UPGRADES</h3>
-                        <div class="upgrade-list" id="activeUpgrades">
-                        </div>
+                <div class="real-time-metrics">
+                    <div class="metric-container">
+                        <canvas id="realtimePerformance"></canvas>
                     </div>
                 </div>
             </aside>
 
             <main class="model-viewer">
                 <div id="3dModel" class="model-container">
+                    <div class="loading-overlay">
+                        <div class="loading-spinner"></div>
+                    </div>
                 </div>
                 <div class="model-controls">
                     <button class="control-btn" id="rotateLeft">⟲</button>
                     <button class="control-btn" id="resetView">□</button>
                     <button class="control-btn" id="rotateRight">⟳</button>
+                    <button class="control-btn" id="explodeView">✧</button>
                 </div>
             </main>
 
-            <aside class="upgrade-panel">
-                <div class="upgrade-categories">
-                    <button class="category-btn active" data-category="engine">ENGINE</button>
-                    <button class="category-btn" data-category="suspension">SUSPENSION</button>
-                    <button class="category-btn" data-category="brakes">BRAKES</button>
-                    <button class="category-btn" data-category="aero">AERODYNAMICS</button>
-                </div>
-
-                <div class="upgrade-options">
-                </div>
-
+            <aside class="upgrade-panel custom-scrollbar">
+                <div class="upgrade-tree"></div>
                 <div class="performance-impact">
-                    <h3>PERFORMANCE IMPACT</h3>
-                    <div class="impact-grid">
-                        <div class="impact-item">
-                            <span class="impact-label">Acceleration</span>
-                            <div class="impact-bar" style="--progress: 85%"></div>
-                        </div>
-                        <div class="impact-item">
-                            <span class="impact-label">Handling</span>
-                            <div class="impact-bar" style="--progress: 92%"></div>
-                        </div>
-                        <div class="impact-item">
-                            <span class="impact-label">Braking</span>
-                            <div class="impact-bar" style="--progress: 78%"></div>
-                        </div>
-                    </div>
+                    <canvas id="performanceRadar"></canvas>
                 </div>
             </aside>
         </div>
     </div>
+
+    <script src="scripts/shaders.js"></script>
+    <script src="scripts/particle-system.js"></script>
+    <script src="scripts/physics-engine.js"></script>
+    <script src="scripts/performance-mapper.js"></script>
+    <script src="scripts/advanced-systems.js"></script>
+    <script src="scripts/main.js"></script>
 </body>
 </html>
