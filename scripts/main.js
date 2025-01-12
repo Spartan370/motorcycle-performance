@@ -48,10 +48,11 @@ initializeLoading()
     }
 
     function loadInitialBikeData() {
-        const bikeData = BikeData[currentBike]
-        modelViewer.loadModel(bikeData.modelPath)
-        performanceGraph.updateGraphs(bikeData.performance)
-        uiController.updatePerformanceStats(bikeData.stats)
+    const bikeData = BikeData[currentBike]
+    modelViewer.loadModel(bikeData.modelPath, trackAssetLoad)
+    performanceGraph.updateGraphs(bikeData.performance)
+    uiController.updatePerformanceStats(bikeData.stats)
+    trackAssetLoad()
     }
 
     function setupEventListeners() {
