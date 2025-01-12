@@ -2,117 +2,115 @@ class ParticleSystem {
     constructor() {
         this.particles = []
         this.maxParticles = 1000
-        this.emissionRate = 60
         this.particleGeometry = new THREE.BufferGeometry()
-        this.particleMaterial = new THREE.PointsMaterial({
-            size: 0.05,
-            map: this.createParticleTexture(),
-            blending: THREE.AdditiveBlending,
+        this.particleMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                size: { value: 2.0 },
+                color: { value: new THREE.Color(0xff3333) }
+            },
+            vertexShader: `
+                uniform float time;
+                uniform float size;
+                
+                attribute float life;
+                attribute vec3 velocity;
+                
+                varying float vAlpha;
+                
+                void main() {
+                    float age = time - life;
+                    vec3 pos = position + velocity * age;
+                    vAlpha = 1.0 - age / 2.0;
+                    
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    gl_PointSize = size * (1.0 - age / 2.0) * (300.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying float vAlpha;
+                
+                void main() {
+                    vec2 center = gl_PointCoord - vec2(0.5);
+                    float dist = length(center);
+                    float alpha = smoothstep(0.5, 0.2, dist) * vAlpha;
+                    gl_FragColor = vec4(color, alpha);
+                }
+            `,
             transparent: true,
+            blending: THREE.AdditiveBlending,
             depthWrite: false
         })
-        
-        this.initialize()
-    }
 
-    initialize() {
-        this.positions = new Float32Array(this.maxParticles * 3)
-        this.velocities = new Float32Array(this.maxParticles * 3)
-        this.colors = new Float32Array(this.maxParticles * 3)
-        this.lifetimes = new Float32Array(this.maxParticles)
-        
-        this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
-        this.particleGeometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3))
-        
         this.particleSystem = new THREE.Points(this.particleGeometry, this.particleMaterial)
+        this.setupParticleAttributes()
     }
 
-    createParticleTexture() {
-        const canvas = document.createElement('canvas')
-        canvas.width = 32
-        canvas.height = 32
-        
-        const context = canvas.getContext('2d')
-        const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16)
-        gradient.addColorStop(0, 'rgba(255,255,255,1)')
-        gradient.addColorStop(1, 'rgba(255,255,255,0)')
-        
-        context.fillStyle = gradient
-        context.fillRect(0, 0, 32, 32)
-        
-        const texture = new THREE.Texture(canvas)
-        texture.needsUpdate = true
-        return texture
+    setupParticleAttributes() {
+        const positions = new Float32Array(this.maxParticles * 3)
+        const velocities = new Float32Array(this.maxParticles * 3)
+        const lifetimes = new Float32Array(this.maxParticles)
+
+        this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+        this.particleGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3))
+        this.particleGeometry.setAttribute('life', new THREE.BufferAttribute(lifetimes, 1))
     }
 
-    emitParticles(position, color, count) {
+    emitParticles(position, direction, count = 50) {
+        const positions = this.particleGeometry.attributes.position.array
+        const velocities = this.particleGeometry.attributes.velocity.array
+        const lifetimes = this.particleGeometry.attributes.life.array
+
         for (let i = 0; i < count; i++) {
-            const index = this.particles.length
-            if (index >= this.maxParticles) break
-            
-            this.positions[index * 3] = position.x
-            this.positions[index * 3 + 1] = position.y
-            this.positions[index * 3 + 2] = position.z
-            
-            this.velocities[index * 3] = (Math.random() - 0.5) * 0.1
-            this.velocities[index * 3 + 1] = Math.random() * 0.1
-            this.velocities[index * 3 + 2] = (Math.random() - 0.5) * 0.1
-            
-            this.colors[index * 3] = color.r
-            this.colors[index * 3 + 1] = color.g
-            this.colors[index * 3 + 2] = color.b
-            
-            this.lifetimes[index] = 1.0
-            
+            const index = this.particles.length * 3
+            if (index >= this.maxParticles * 3) break
+
+            positions[index] = position.x
+            positions[index + 1] = position.y
+            positions[index + 2] = position.z
+
+            const spread = 0.5
+            velocities[index] = direction.x + (Math.random() - 0.5) * spread
+            velocities[index + 1] = direction.y + (Math.random() - 0.5) * spread
+            velocities[index + 2] = direction.z + (Math.random() - 0.5) * spread
+
+            lifetimes[this.particles.length] = performance.now() / 1000
+
             this.particles.push({
-                index: index,
-                lifetime: 1.0
+                index: this.particles.length,
+                birth: performance.now() / 1000
             })
         }
-        
+
         this.particleGeometry.attributes.position.needsUpdate = true
-        this.particleGeometry.attributes.color.needsUpdate = true
+        this.particleGeometry.attributes.velocity.needsUpdate = true
+        this.particleGeometry.attributes.life.needsUpdate = true
     }
 
     update(deltaTime) {
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const particle = this.particles[i]
-            const index = particle.index
-            
-            particle.lifetime -= deltaTime
-            
-            if (particle.lifetime <= 0) {
-                this.particles.splice(i, 1)
-                continue
-            }
-            
-            this.positions[index * 3] += this.velocities[index * 3]
-            this.positions[index * 3 + 1] += this.velocities[index * 3 + 1]
-            this.positions[index * 3 + 2] += this.velocities[index * 3 + 2]
-            
-            const alpha = particle.lifetime
-            this.colors[index * 3] *= alpha
-            this.colors[index * 3 + 1] *= alpha
-            this.colors[index * 3 + 2] *= alpha
-        }
-        
-        this.particleGeometry.attributes.position.needsUpdate = true
-        this.particleGeometry.attributes.color.needsUpdate = true
+        this.particleMaterial.uniforms.time.value = performance.now() / 1000
+
+        const now = performance.now() / 1000
+        this.particles = this.particles.filter(particle => {
+            return (now - particle.birth) < 2.0
+        })
     }
 
     createExhaustEffect(position) {
-        const color = new THREE.Color(0xff3300)
-        this.emitParticles(position, color, 5)
+        const direction = new THREE.Vector3(0, 0, -1)
+        this.emitParticles(position, direction, 10)
     }
 
-    createSparkEffect(position) {
-        const color = new THREE.Color(0xffff00)
-        this.emitParticles(position, color, 20)
+    createBrakeEffect(position) {
+        const direction = new THREE.Vector3(0, 1, 0)
+        this.emitParticles(position, direction, 20)
     }
 
-    createNitroEffect(position) {
-        const color = new THREE.Color(0x00ffff)
-        this.emitParticles(position, color, 30)
+    createDriftEffect(position) {
+        const direction = new THREE.Vector3(1, 0, 0)
+        this.emitParticles(position, direction, 30)
     }
 }
 
