@@ -1,29 +1,76 @@
-const graphData = {
-    nodes: [
-        {id: 1, label: 'YAMAHA R1', level: 0, color: '#800000', font: {size: 25}},
-        {id: 2, label: 'DUCATI V4', level: 0, color: '#800000', font: {size: 25}},
-        
-        {id: 3, label: 'ENGINE', level: 1, color: '#000080'},
-        {id: 4, label: 'SUSPENSION', level: 1, color: '#000080'},
-        {id: 5, label: 'ELECTRONICS', level: 1, color: '#000080'},
-        
-        {id: 6, label: 'Titanium Exhaust\n$3,800', level: 2},
-        {id: 7, label: 'ECU Flash\n$1,500', level: 2},
-        {id: 8, label: 'Öhlins Fork\n$4,200', level: 2},
-        {id: 9, label: 'Quick Shifter\n$950', level: 2}
-    ],
-    edges: [
-        {from: 1, to: 3},
-        {from: 1, to: 4},
-        {from: 1, to: 5},
-        {from: 3, to: 6},
-        {from: 3, to: 7},
-        {from: 4, to: 8},
-        {from: 5, to: 9}
-    ]
+const motorcycleData = {
+    bikes: {
+        yamahaR1: {
+            name: "YAMAHA R1",
+            baseHP: 200,
+            categories: {
+                engine: {
+                    name: "ENGINE",
+                    upgrades: [
+                        {
+                            id: "exhaust_r1",
+                            name: "Titanium Full System",
+                            cost: 3800,
+                            stage: 3,
+                            hpGain: 12,
+                            installTime: "4-6 hours",
+                            compatibility: ["2015+", "Race Only"],
+                            details: "Full titanium construction, weight reduction: -4kg"
+                        },
+                        {
+                            id: "ecu_r1",
+                            name: "Race ECU",
+                            cost: 2200,
+                            stage: 2,
+                            hpGain: 8,
+                            installTime: "2-3 hours",
+                            compatibility: ["All Years"],
+                            details: "Fully programmable, includes race maps"
+                        }
+                    ]
+                },
+                suspension: {
+                    name: "SUSPENSION",
+                    upgrades: [
+                        {
+                            id: "forks_r1",
+                            name: "Öhlins FGR300",
+                            cost: 4200,
+                            stage: 3,
+                            handling: 10,
+                            installTime: "3-4 hours",
+                            compatibility: ["2020+"],
+                            details: "World Superbike spec front forks"
+                        }
+                    ]
+                }
+            }
+        },
+        ducatiV4: {
+            name: "DUCATI V4",
+            baseHP: 214,
+            categories: {
+                engine: {
+                    name: "ENGINE",
+                    upgrades: [
+                        {
+                            id: "exhaust_v4",
+                            name: "Akrapovič Evolution",
+                            cost: 4500,
+                            stage: 3,
+                            hpGain: 14,
+                            installTime: "4-5 hours",
+                            compatibility: ["All V4 Models"],
+                            details: "Titanium construction, includes X-pipe"
+                        }
+                    ]
+                }
+            }
+        }
+    }
 };
 
-const networkOptions = {
+const networkConfig = {
     nodes: {
         shape: 'dot',
         size: 30,
@@ -56,11 +103,14 @@ const networkOptions = {
         barnesHut: {
             gravitationalConstant: -80000,
             springLength: 250,
-            springConstant: 0.04
+            springConstant: 0.04,
+            damping: 0.09
         }
     },
     interaction: {
         hover: true,
-        tooltipDelay: 200
+        tooltipDelay: 200,
+        zoomView: true,
+        dragView: true
     }
 };
