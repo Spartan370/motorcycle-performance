@@ -1,4 +1,15 @@
+import ModelViewer from './model-viewer.js'
+import PerformanceGraph from './performance-graph.js'
+import UIController from './ui-controller.js'
+import ParticleSystem from './particle-system.js'
+import PhysicsEngine from './physics-engine.js'
+import PerformanceMapper from './performance-mapper.js'
+import AdvancedSystems from './advanced-systems.js'
+import BikeData from './bike-data.js'
+
 document.addEventListener('DOMContentLoaded', () => {
+    const loadingScreen = document.querySelector('.loading-screen')
+    const loadingProgress = document.querySelector('.loading-progress')
     const modelViewer = new ModelViewer()
     const performanceGraph = new PerformanceGraph()
     const uiController = new UIController()
@@ -6,41 +17,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const physicsEngine = new PhysicsEngine()
     const performanceMapper = new PerformanceMapper()
     const advancedSystems = new AdvancedSystems()
-    const loadingScreen = document.querySelector('.loading-screen')
-const loadingProgress = document.querySelector('.loading-progress')
-
-function updateLoadingProgress(progress) {
-    loadingProgress.textContent = `${Math.round(progress)}%`
-    if (progress >= 100) {
-        loadingScreen.style.opacity = '0'
-        setTimeout(() => {
-            loadingScreen.style.display = 'none'
-        }, 500)
-    }
-}
-
-let totalAssets = 0
-let loadedAssets = 0
-
-function trackAssetLoad() {
-    loadedAssets++
-    const progress = (loadedAssets / totalAssets) * 100
-    updateLoadingProgress(progress)
-}
-
-function initializeLoading() {
-    totalAssets = Object.keys(BikeData).length + 3 // bikes + essential assets
-    loadingScreen.style.display = 'flex'
-    loadingScreen.style.opacity = '1'
-}
-
-initializeLoading()
 
     let currentBike = 'r1'
     let isSimulationRunning = false
     let lastFrameTime = 0
+    let totalAssets = Object.keys(BikeData).length + 3
+    let loadedAssets = 0
+
+    function updateLoadingProgress(progress) {
+        loadingProgress.textContent = `${Math.round(progress)}%`
+        if (progress >= 100) {
+            loadingScreen.style.opacity = '0'
+            setTimeout(() => loadingScreen.style.display = 'none', 500)
+        }
+    }
+
+    function trackAssetLoad() {
+        loadedAssets++
+        const progress = (loadedAssets / totalAssets) * 100
+        updateLoadingProgress(progress)
+    }
 
     function initializeApplication() {
+        loadingScreen.style.display = 'flex'
+        loadingScreen.style.opacity = '1'
+        
         loadInitialBikeData()
         setupEventListeners()
         startRenderLoop()
@@ -48,11 +49,11 @@ initializeLoading()
     }
 
     function loadInitialBikeData() {
-    const bikeData = BikeData[currentBike]
-    modelViewer.loadModel(bikeData.modelPath, trackAssetLoad)
-    performanceGraph.updateGraphs(bikeData.performance)
-    uiController.updatePerformanceStats(bikeData.stats)
-    trackAssetLoad()
+        const bikeData = BikeData[currentBike]
+        modelViewer.loadModel(bikeData.modelPath, trackAssetLoad)
+        performanceGraph.updateGraphs(bikeData.performance)
+        uiController.updatePerformanceStats(bikeData.stats)
+        physicsEngine.createMotorcyclePhysics(bikeData.physics)
     }
 
     function setupEventListeners() {
@@ -84,6 +85,13 @@ initializeLoading()
                 modelViewer.setViewMode(view)
             })
         })
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isSimulationRunning = !isSimulationRunning
+                advancedSystems.toggleSimulation(isSimulationRunning)
+            }
+        })
     }
 
     function startRenderLoop(timestamp = 0) {
@@ -101,11 +109,6 @@ initializeLoading()
         requestAnimationFrame(startRenderLoop)
     }
 
-    function initializePhysics() {
-        const bikeData = BikeData[currentBike]
-        physicsEngine.createMotorcyclePhysics(bikeData.physics)
-    }
-
     function updateSimulation(deltaTime) {
         physicsEngine.update(deltaTime)
         const physicsData = physicsEngine.getSimulationData()
@@ -118,14 +121,22 @@ initializeLoading()
         )
         
         updatePerformanceDisplays(performance)
+        
+        if (performance.acceleration > 0.8) {
+            particleSystem.createExhaustEffect(physicsData.position)
+        }
     }
 
     function updateTelemetry() {
         const telemetry = advancedSystems.getTelemetryData()
-        document.getElementById('rpm-value').textContent = Math.round(telemetry.rpm)
-        document.getElementById('speed-value').textContent = Math.round(telemetry.speed)
-        document.getElementById('gear-value').textContent = telemetry.gear
-        document.getElementById('lean-value').textContent = `${telemetry.leanAngle.toFixed(1)}°`
+        document.querySelectorAll('[data-telemetry]').forEach(element => {
+            const key = element.dataset.telemetry
+            if (telemetry[key] !== undefined) {
+                element.textContent = typeof telemetry[key] === 'number' 
+                    ? telemetry[key].toFixed(1) 
+                    : telemetry[key]
+            }
+        })
     }
 
     function updateSystemDisplays() {
@@ -150,13 +161,6 @@ initializeLoading()
             }
         })
     }
-
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
-            isSimulationRunning = !isSimulationRunning
-            advancedSystems.toggleSimulation(isSimulationRunning)
-        }
-    })
 
     initializeApplication()
 })
