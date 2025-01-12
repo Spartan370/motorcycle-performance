@@ -1,142 +1,316 @@
 const BikeData = {
     r1: {
         name: "Yamaha R1M 2024",
-        specs: {
-            engine: "998cc Inline-4",
+        modelPath: "assets/models/r1m.glb",
+        stats: {
             power: 200,
-            torque: 112,
+            torque: 113.3,
             weight: 201,
-            topSpeed: 299
+            handling: 95
         },
         performance: {
             powerCurve: [
-                0, 15, 35, 65, 95, 125, 155, 180, 195, 200,
-                200, 198, 195, 190, 182, 170, 155, 140, 120, 100
+                { rpm: 4000, value: 60 },
+                { rpm: 6000, value: 100 },
+                { rpm: 8000, value: 140 },
+                { rpm: 10000, value: 180 },
+                { rpm: 12000, value: 200 },
+                { rpm: 14000, value: 190 }
             ],
             torqueCurve: [
-                0, 40, 60, 75, 85, 95, 105, 112, 110, 108,
-                105, 100, 95, 90, 85, 80, 75, 70, 65, 60
-            ],
-            accelerationCurve: [
-                0, 0.5, 1.2, 2.1, 3.0, 3.8, 4.5, 5.1, 5.6, 6.0,
-                6.3, 6.5, 6.7, 6.8, 6.9, 7.0, 7.0, 7.0, 7.0, 7.0
+                { rpm: 4000, value: 80 },
+                { rpm: 6000, value: 95 },
+                { rpm: 8000, value: 105 },
+                { rpm: 10000, value: 113 },
+                { rpm: 12000, value: 108 },
+                { rpm: 14000, value: 95 }
             ]
         },
+        physics: {
+            mass: 201,
+            dimensions: {
+                length: 2.055,
+                width: 0.690,
+                height: 1.165,
+                wheelbase: 1.405
+            },
+            suspension: {
+                frontTravel: 0.120,
+                rearTravel: 0.120,
+                frontSpringRate: 10000,
+                rearSpringRate: 12000
+            },
+            aerodynamics: {
+                dragCoefficient: 0.48,
+                frontalArea: 0.85
+            }
+        },
         upgrades: {
-            available: true,
-            categories: ["Engine", "Suspension", "Exhaust", "Electronics"]
+            engine: [
+                {
+                    id: "stage1",
+                    name: "Stage 1 ECU Flash",
+                    price: 800,
+                    gains: {
+                        power: 10,
+                        torque: 5
+                    }
+                },
+                {
+                    id: "stage2",
+                    name: "Stage 2 Performance Kit",
+                    price: 2500,
+                    gains: {
+                        power: 15,
+                        torque: 8
+                    }
+                },
+                {
+                    id: "stage3",
+                    name: "Stage 3 Race Package",
+                    price: 5000,
+                    gains: {
+                        power: 25,
+                        torque: 12
+                    }
+                }
+            ],
+            suspension: [
+                {
+                    id: "springs",
+                    name: "Race Springs",
+                    price: 600,
+                    gains: {
+                        handling: 10
+                    }
+                },
+                {
+                    id: "cartridge",
+                    name: "Cartridge Kit",
+                    price: 2200,
+                    gains: {
+                        handling: 25
+                    }
+                },
+                {
+                    id: "ohlins",
+                    name: "Öhlins Package",
+                    price: 4500,
+                    gains: {
+                        handling: 40
+                    }
+                }
+            ]
         }
     },
     v4: {
         name: "Ducati V4R 2024",
-        specs: {
-            engine: "998cc V4",
+        modelPath: "assets/models/v4r.glb",
+        stats: {
             power: 218,
-            torque: 118,
+            torque: 111.3,
             weight: 193,
-            topSpeed: 299
+            handling: 98
         },
         performance: {
             powerCurve: [
-                0, 20, 45, 75, 105, 140, 170, 195, 210, 218,
-                218, 215, 210, 205, 195, 180, 165, 150, 130, 110
+                { rpm: 4000, value: 70 },
+                { rpm: 6000, value: 120 },
+                { rpm: 8000, value: 160 },
+                { rpm: 10000, value: 190 },
+                { rpm: 12000, value: 218 },
+                { rpm: 14000, value: 210 }
             ],
             torqueCurve: [
-                0, 45, 65, 80, 90, 100, 110, 118, 115, 112,
-                108, 105, 100, 95, 90, 85, 80, 75, 70, 65
-            ],
-            accelerationCurve: [
-                0, 0.6, 1.4, 2.3, 3.2, 4.0, 4.7, 5.3, 5.8, 6.2,
-                6.5, 6.7, 6.9, 7.0, 7.1, 7.2, 7.2, 7.2, 7.2, 7.2
+                { rpm: 4000, value: 85 },
+                { rpm: 6000, value: 98 },
+                { rpm: 8000, value: 108 },
+                { rpm: 10000, value: 111 },
+                { rpm: 12000, value: 106 },
+                { rpm: 14000, value: 98 }
             ]
         },
+        physics: {
+            mass: 193,
+            dimensions: {
+                length: 2.080,
+                width: 0.705,
+                height: 1.155,
+                wheelbase: 1.420
+            },
+            suspension: {
+                frontTravel: 0.125,
+                rearTravel: 0.130,
+                frontSpringRate: 10500,
+                rearSpringRate: 12500
+            },
+            aerodynamics: {
+                dragCoefficient: 0.45,
+                frontalArea: 0.82
+            }
+        },
         upgrades: {
-            available: true,
-            categories: ["Engine", "Suspension", "Exhaust", "Electronics"]
+            engine: [
+                {
+                    id: "stage1",
+                    name: "Stage 1 ECU Flash",
+                    price: 900,
+                    gains: {
+                        power: 12,
+                        torque: 6
+                    }
+                },
+                {
+                    id: "stage2",
+                    name: "Stage 2 Performance Kit",
+                    price: 3000,
+                    gains: {
+                        power: 18,
+                        torque: 9
+                    }
+                },
+                {
+                    id: "stage3",
+                    name: "Stage 3 Race Package",
+                    price: 6000,
+                    gains: {
+                        power: 28,
+                        torque: 14
+                    }
+                }
+            ],
+            suspension: [
+                {
+                    id: "springs",
+                    name: "Race Springs",
+                    price: 700,
+                    gains: {
+                        handling: 12
+                    }
+                },
+                {
+                    id: "cartridge",
+                    name: "Cartridge Kit",
+                    price: 2500,
+                    gains: {
+                        handling: 28
+                    }
+                },
+                {
+                    id: "ohlins",
+                    name: "Öhlins Package",
+                    price: 5000,
+                    gains: {
+                        handling: 45
+                    }
+                }
+            ]
         }
     },
     zx10r: {
         name: "Kawasaki ZX-10RR 2024",
-        specs: {
-            engine: "998cc Inline-4",
-            power: 204,
-            torque: 115,
+        modelPath: "assets/models/zx10r.glb",
+        stats: {
+            power: 203,
+            torque: 114.9,
             weight: 207,
-            topSpeed: 299
+            handling: 93
         },
         performance: {
             powerCurve: [
-                0, 18, 40, 70, 100, 130, 160, 185, 200, 204,
-                204, 202, 198, 192, 185, 175, 160, 145, 125, 105
+                { rpm: 4000, value: 65 },
+                { rpm: 6000, value: 110 },
+                { rpm: 8000, value: 150 },
+                { rpm: 10000, value: 185 },
+                { rpm: 12000, value: 203 },
+                { rpm: 14000, value: 195 }
             ],
             torqueCurve: [
-                0, 42, 62, 78, 88, 98, 108, 115, 113, 110,
-                106, 102, 97, 92, 87, 82, 77, 72, 67, 62
-            ],
-            accelerationCurve: [
-                0, 0.55, 1.3, 2.2, 3.1, 3.9, 4.6, 5.2, 5.7, 6.1,
-                6.4, 6.6, 6.8, 6.9, 7.0, 7.1, 7.1, 7.1, 7.1, 7.1
+                { rpm: 4000, value: 82 },
+                { rpm: 6000, value: 96 },
+                { rpm: 8000, value: 107 },
+                { rpm: 10000, value: 114 },
+                { rpm: 12000, value: 110 },
+                { rpm: 14000, value: 96 }
             ]
         },
+        physics: {
+            mass: 207,
+            dimensions: {
+                length: 2.085,
+                width: 0.750,
+                height: 1.185,
+                wheelbase: 1.450
+            },
+            suspension: {
+                frontTravel: 0.120,
+                rearTravel: 0.114,
+                frontSpringRate: 9800,
+                rearSpringRate: 11800
+            },
+            aerodynamics: {
+                dragCoefficient: 0.49,
+                frontalArea: 0.87
+            }
+        },
         upgrades: {
-            available: true,
-            categories: ["Engine", "Suspension", "Exhaust", "Electronics"]
+            engine: [
+                {
+                    id: "stage1",
+                    name: "Stage 1 ECU Flash",
+                    price: 750,
+                    gains: {
+                        power: 9,
+                        torque: 4
+                    }
+                },
+                {
+                    id: "stage2",
+                    name: "Stage 2 Performance Kit",
+                    price: 2800,
+                    gains: {
+                        power: 14,
+                        torque: 7
+                    }
+                },
+                {
+                    id: "stage3",
+                    name: "Stage 3 Race Package",
+                    price: 5500,
+                    gains: {
+                        power: 24,
+                        torque: 11
+                    }
+                }
+            ],
+            suspension: [
+                {
+                    id: "springs",
+                    name: "Race Springs",
+                    price: 550,
+                    gains: {
+                        handling: 8
+                    }
+                },
+                {
+                    id: "cartridge",
+                    name: "Cartridge Kit",
+                    price: 2000,
+                    gains: {
+                        handling: 22
+                    }
+                },
+                {
+                    id: "ohlins",
+                    name: "Öhlins Package",
+                    price: 4200,
+                    gains: {
+                        handling: 38
+                    }
+                }
+            ]
         }
     }
 }
 
-const UpgradeData = {
-    engine: {
-        stage1: {
-            name: "Stage 1 ECU Flash",
-            power: 10,
-            torque: 5,
-            cost: 800
-        },
-        stage2: {
-            name: "Stage 2 Performance Kit",
-            power: 15,
-            torque: 8,
-            cost: 2500
-        },
-        stage3: {
-            name: "Stage 3 Race Package",
-            power: 25,
-            torque: 12,
-            cost: 5000
-        }
-    },
-    exhaust: {
-        slip_on: {
-            name: "Slip-on Exhaust",
-            power: 5,
-            weight: -2,
-            cost: 1200
-        },
-        full_system: {
-            name: "Full Exhaust System",
-            power: 12,
-            weight: -4.5,
-            cost: 3500
-        }
-    },
-    suspension: {
-        springs: {
-            name: "Race Springs",
-            handling: 10,
-            cost: 600
-        },
-        cartridge: {
-            name: "Cartridge Kit",
-            handling: 25,
-            cost: 2200
-        },
-        ohlins: {
-            name: "Öhlins Package",
-            handling: 40,
-            cost: 4500
-        }
-    }
-}
-
-export { BikeData, UpgradeData }
+export default BikeData
