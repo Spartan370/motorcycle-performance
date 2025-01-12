@@ -1,152 +1,137 @@
-class MotorcyclePhysicsEngine {
+class PhysicsEngine {
     constructor() {
         this.world = new CANNON.World()
+        this.bodies = []
+        this.constraints = []
+        
+        this.initialize()
+    }
+
+    initialize() {
         this.world.gravity.set(0, -9.82, 0)
-        this.world.broadphase = new CANNON.SAPBroadphase(this.world)
-        this.world.solver.iterations = 20
-        this.world.defaultContactMaterial = new CANNON.ContactMaterial(
-            new CANNON.Material(),
-            new CANNON.Material(),
+        this.world.broadphase = new CANNON.NaiveBroadphase()
+        this.world.solver.iterations = 10
+        
+        this.setupCollisionMaterials()
+        this.setupContactMaterials()
+    }
+
+    setupCollisionMaterials() {
+        this.materials = {
+            tire: new CANNON.Material('tire'),
+            ground: new CANNON.Material('ground'),
+            chassis: new CANNON.Material('chassis')
+        }
+    }
+
+    setupContactMaterials() {
+        const tireFriction = new CANNON.ContactMaterial(
+            this.materials.tire,
+            this.materials.ground,
             {
-                friction: 0.8,
+                friction: 0.9,
                 restitution: 0.3,
-                contactEquationStiffness: 1e8,
-                contactEquationRelaxation: 3
+                contactEquationStiffness: 1000
             }
         )
         
-        this.bodies = new Map()
-        this.constraints = new Map()
-        this.forces = new Map()
-        this.initializePhysicsBodies()
+        this.world.addContactMaterial(tireFriction)
     }
 
-    initializePhysicsBodies() {
+    createMotorcyclePhysics(modelData) {
         const chassisShape = new CANNON.Box(new CANNON.Vec3(1, 0.5, 2))
         const chassisBody = new CANNON.Body({
             mass: 180,
-            material: new CANNON.Material(),
-            shape: chassisShape,
-            angularDamping: 0.5
+            material: this.materials.chassis,
+            shape: chassisShape
         })
         
-        const wheelGeometry = {
-            radius: 0.3,
-            height: 0.2,
-            numSegments: 32
-        }
-
-        const wheelMaterial = new CANNON.Material('wheel')
-        const wheelContactMaterial = new CANNON.ContactMaterial(
-            wheelMaterial,
-            this.world.defaultMaterial,
-            {
-                friction: 0.9,
-                restitution: 0.01,
-                contactEquationStiffness: 1e8
-            }
-        )
+        this.setupWheels(chassisBody)
+        this.setupSuspension(chassisBody)
         
-        this.world.addContactMaterial(wheelContactMaterial)
-        this.createSuspensionSystem(chassisBody, wheelGeometry, wheelMaterial)
+        this.bodies.push(chassisBody)
+        this.world.addBody(chassisBody)
+        
+        return chassisBody
     }
 
-    createSuspensionSystem(chassisBody, wheelGeometry, wheelMaterial) {
-        const wheelPositions = [
-            new CANNON.Vec3(-0.8, -0.5, 1.5),
-            new CANNON.Vec3(0.8, -0.5, 1.5),
-            new CANNON.Vec3(-0.8, -0.5, -1.5),
-            new CANNON.Vec3(0.8, -0.5, -1.5)
-        ]
-
-        wheelPositions.forEach((position, index) => {
-            const wheel = new CANNON.Body({
-                mass: 5,
-                material: wheelMaterial,
-                shape: new CANNON.Cylinder(
-                    wheelGeometry.radius,
-                    wheelGeometry.radius,
-                    wheelGeometry.height,
-                    wheelGeometry.numSegments
-                )
-            })
-
-            const suspensionConstraint = new CANNON.Spring(
-                chassisBody,
-                wheel,
-                {
-                    localAnchorA: position,
-                    localAnchorB: new CANNON.Vec3(),
-                    restLength: 0.3,
-                    stiffness: 100,
-                    damping: 10
-                }
-            )
-
-            this.world.addConstraint(suspensionConstraint)
-            this.constraints.set(`wheel_${index}`, suspensionConstraint)
-            this.bodies.set(`wheel_${index}`, wheel)
+    setupWheels(chassisBody) {
+        const wheelShape = new CANNON.Sphere(0.3)
+        const wheelMaterial = this.materials.tire
+        
+        const frontWheel = new CANNON.Body({
+            mass: 10,
+            material: wheelMaterial,
+            shape: wheelShape
         })
+        
+        const rearWheel = new CANNON.Body({
+            mass: 10,
+            material: wheelMaterial,
+            shape: wheelShape
+        })
+        
+        this.bodies.push(frontWheel, rearWheel)
+        this.world.addBody(frontWheel)
+        this.world.addBody(rearWheel)
     }
 
-    applyEngineForces(throttle, brake, lean) {
-        const enginePower = 200 * throttle
-        const brakingForce = 100 * brake
-        const leanForce = 50 * lean
-
-        this.bodies.forEach((body, key) => {
-            if (key.startsWith('wheel')) {
-                const isRearWheel = key.endsWith('2') || key.endsWith('3')
-                if (isRearWheel) {
-                    body.applyLocalForce(
-                        new CANNON.Vec3(0, 0, enginePower),
-                        new CANNON.Vec3(0, 0, 0)
-                    )
-                }
-                body.applyLocalForce(
-                    new CANNON.Vec3(0, 0, -brakingForce),
-                    new CANNON.Vec3(0, 0, 0)
-                )
-            }
+    setupSuspension(chassisBody) {
+        const frontSuspension = new CANNON.Spring(chassisBody, this.bodies[1], {
+            restLength: 0.3,
+            stiffness: 30,
+            damping: 4,
+            localAnchorA: new CANNON.Vec3(0, -0.5, 1),
+            localAnchorB: new CANNON.Vec3(0, 0, 0)
         })
+        
+        const rearSuspension = new CANNON.Spring(chassisBody, this.bodies[2], {
+            restLength: 0.3,
+            stiffness: 30,
+            damping: 4,
+            localAnchorA: new CANNON.Vec3(0, -0.5, -1),
+            localAnchorB: new CANNON.Vec3(0, 0, 0)
+        })
+        
+        this.constraints.push(frontSuspension, rearSuspension)
+    }
 
-        const chassisBody = this.bodies.get('chassis')
-        chassisBody.applyLocalForce(
-            new CANNON.Vec3(leanForce, 0, 0),
-            new CANNON.Vec3(0, 1, 0)
+    applyForces(body, forces) {
+        body.applyLocalForce(
+            new CANNON.Vec3(forces.x, forces.y, forces.z),
+            new CANNON.Vec3(0, 0, 0)
         )
-    }
-
-    calculateDynamicForces() {
-        const airDensity = 1.225
-        const frontalArea = 1.0
-        const dragCoefficient = 0.7
-
-        this.bodies.forEach((body) => {
-            const velocity = body.velocity
-            const speed = velocity.length()
-            const dragMagnitude = 0.5 * airDensity * Math.pow(speed, 2) * dragCoefficient * frontalArea
-            const dragForce = velocity.scale(-dragMagnitude)
-            body.applyForce(dragForce, body.position)
-        })
     }
 
     update(deltaTime) {
-        this.calculateDynamicForces()
-        this.world.step(1/60, deltaTime, 10)
-        return this.getPhysicsState()
+        this.world.step(1/60, deltaTime, 3)
+        this.updateConstraints()
     }
 
-    getPhysicsState() {
-        const state = {}
-        this.bodies.forEach((body, key) => {
-            state[key] = {
-                position: body.position.toArray(),
-                quaternion: body.quaternion.toArray(),
-                velocity: body.velocity.toArray(),
-                angularVelocity: body.angularVelocity.toArray()
+    updateConstraints() {
+        this.constraints.forEach(constraint => {
+            if (constraint instanceof CANNON.Spring) {
+                constraint.applyForce()
             }
         })
-        return state
+    }
+
+    getBodyPosition(body) {
+        return {
+            x: body.position.x,
+            y: body.position.y,
+            z: body.position.z
+        }
+    }
+
+    getBodyRotation(body) {
+        return {
+            x: body.quaternion.x,
+            y: body.quaternion.y,
+            z: body.quaternion.z,
+            w: body.quaternion.w
+        }
     }
 }
+
+export default PhysicsEngine
