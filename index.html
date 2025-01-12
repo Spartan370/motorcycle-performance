@@ -3,21 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Motorcycle Upgrades</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <title>Ultimate Motorcycle Performance Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/vis-network.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
-    <div id="mynetwork"></div>
-    <div class="controls">
-        <h2>Upgrade Stages</h2>
-        <div id="legend"></div>
-    </div>
-    <div class="node-info" id="nodeInfo">
-        <h3 id="nodeName"></h3>
-        <p id="nodeDetails"></p>
-        <div class="performance-bar" id="performanceBar"></div>
+    <div class="main-container">
+        <header class="premium-header">
+            <h1>MOTORCYCLE PERFORMANCE ECOSYSTEM</h1>
+            <div class="performance-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="powerGain">0</span>
+                    <span class="stat-label">HP GAIN</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalCost">$0</span>
+                    <span class="stat-label">TOTAL COST</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="mynetwork"></div>
+
+        <div class="controls-panel">
+            <div class="upgrade-stages">
+                <h2>UPGRADE STAGES</h2>
+                <div class="stage-list">
+                    <div class="stage-item">
+                        <div class="stage-color stage1"></div>
+                        <span>Stage 1: Basic Performance</span>
+                    </div>
+                    <div class="stage-item">
+                        <div class="stage-color stage2"></div>
+                        <span>Stage 2: Advanced Tuning</span>
+                    </div>
+                    <div class="stage-item">
+                        <div class="stage-color stage3"></div>
+                        <span>Stage 3: Race Spec</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="upgrade-details" id="upgradeDetails">
+            <h3 class="detail-title">UPGRADE SPECIFICATIONS</h3>
+            <div class="detail-content">
+                <div class="detail-row">
+                    <span class="detail-label">Component:</span>
+                    <span class="detail-value" id="componentName"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Installation Time:</span>
+                    <span class="detail-value" id="installTime"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Performance Gain:</span>
+                    <span class="detail-value" id="perfGain"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Compatibility:</span>
+                    <span class="detail-value" id="compatibility"></span>
+                </div>
+                <div class="performance-bar-container">
+                    <div class="performance-bar" id="performanceBar"></div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="data.js"></script>
     <script src="network.js"></script>
