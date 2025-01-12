@@ -1,132 +1,191 @@
 class UIController {
     constructor() {
+        this.activeModel = 'r1'
+        this.isDarkMode = true
         this.initializeElements()
-        this.setupEventHandlers()
+        this.setupEventListeners()
         this.setupAnimations()
     }
 
     initializeElements() {
-        this.upgradeButtons = document.querySelectorAll('.upgrade-btn')
-        this.statDisplays = document.querySelectorAll('.stat-value')
-        this.modelRotator = document.querySelector('.model-container')
-        this.tooltips = document.querySelectorAll('[data-tooltip]')
+        this.elements = {
+            themeToggle: document.querySelector('.theme-toggle'),
+            modelSelector: document.getElementById('bikeModel'),
+            upgradeButtons: document.querySelectorAll('.upgrade-btn'),
+            modeButtons: document.querySelectorAll('.mode-btn'),
+            systemSliders: document.querySelectorAll('.system-slider'),
+            metricValues: document.querySelectorAll('.metric-value'),
+            categoryButtons: document.querySelectorAll('.category-btn'),
+            viewButtons: document.querySelectorAll('.view-btn'),
+            controlButtons: document.querySelectorAll('.control-btn')
+        }
     }
 
-    setupEventHandlers() {
-        this.upgradeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                this.handleUpgradeSelection(button)
-                this.animateUpgradeEffect(button)
-            })
+    setupEventListeners() {
+        this.elements.themeToggle.addEventListener('click', () => this.toggleTheme())
+        this.elements.modelSelector.addEventListener('change', (e) => this.handleModelChange(e))
+        
+        this.elements.upgradeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleUpgrade(e))
         })
 
-        this.modelRotator.addEventListener('mousemove', (e) => {
-            this.handleModelRotation(e)
+        this.elements.modeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleModeChange(e))
+        })
+
+        this.elements.systemSliders.forEach(slider => {
+            slider.addEventListener('input', (e) => this.handleSystemChange(e))
+        })
+
+        this.elements.categoryButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleCategoryChange(e))
+        })
+
+        this.elements.viewButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleViewChange(e))
+        })
+
+        this.elements.controlButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleControlClick(e))
         })
     }
 
     setupAnimations() {
-        gsap.registerPlugin(ScrollTrigger)
+        this.animations = {
+            buttonPress: {
+                scale: 0.95,
+                duration: 0.1
+            },
+            valueChange: {
+                duration: 0.3,
+                ease: "power2.out"
+            }
+        }
+    }
+
+    toggleTheme() {
+        this.isDarkMode = !this.isDarkMode
+        document.body.classList.toggle('light-mode')
+        this.elements.themeToggle.textContent = this.isDarkMode ? '🌙' : '☀️'
+        this.updateThemeColors()
+    }
+
+    updateThemeColors() {
+        const theme = this.isDarkMode ? {
+            background: '#0a0a0a',
+            text: '#ffffff',
+            accent: '#ff0000'
+        } : {
+            background: '#ffffff',
+            text: '#0a0a0a',
+            accent: '#cc0000'
+        }
+
+        document.documentElement.style.setProperty('--background-color', theme.background)
+        document.documentElement.style.setProperty('--text-color', theme.text)
+        document.documentElement.style.setProperty('--accent-color', theme.accent)
+    }
+
+    handleModelChange(event) {
+        this.activeModel = event.target.value
+        this.updateModelDisplay()
+        this.animateModelChange()
+    }
+
+    handleUpgrade(event) {
+        const upgradeBtn = event.target
+        const upgradeType = upgradeBtn.dataset.upgrade
         
-        gsap.from('.stat-value', {
-            textContent: 0,
-            duration: 2,
-            ease: 'power1.out',
-            snap: { textContent: 1 },
-            stagger: 0.2
+        gsap.to(upgradeBtn, {
+            scale: this.animations.buttonPress.scale,
+            duration: this.animations.buttonPress.duration,
+            yoyo: true,
+            repeat: 1
+        })
+
+        this.applyUpgrade(upgradeType)
+    }
+
+    handleModeChange(event) {
+        const modeButtons = this.elements.modeButtons
+        modeButtons.forEach(btn => btn.classList.remove('active'))
+        event.target.classList.add('active')
+        
+        this.updateRidingMode(event.target.dataset.mode)
+    }
+
+    handleSystemChange(event) {
+        const slider = event.target
+        const system = slider.dataset.system
+        const value = slider.value
+        
+        this.updateSystemValue(system, value)
+    }
+
+    handleCategoryChange(event) {
+        const categoryButtons = this.elements.categoryButtons
+        categoryButtons.forEach(btn => btn.classList.remove('active'))
+        event.target.classList.add('active')
+        
+        this.showUpgradeCategory(event.target.dataset.category)
+    }
+
+    handleViewChange(event) {
+        const viewButtons = this.elements.viewButtons
+        viewButtons.forEach(btn => btn.classList.remove('active'))
+        event.target.classList.add('active')
+        
+        this.changeModelView(event.target.dataset.view)
+    }
+
+    handleControlClick(event) {
+        const control = event.target.dataset.control
+        this.executeModelControl(control)
+    }
+
+    updateModelDisplay() {
+        const previews = document.querySelectorAll('.bike-preview')
+        previews.forEach(preview => {
+            preview.classList.toggle('active', preview.dataset.model === this.activeModel)
         })
     }
 
-    handleUpgradeSelection(button) {
-        const upgradeType = button.dataset.upgrade
-        const upgradeLevel = button.dataset.level
-        
-        this.updatePerformanceStats(upgradeType, upgradeLevel)
-        this.animateStatChanges()
+    animateModelChange() {
+        gsap.from('.bike-preview.active', {
+            opacity: 0,
+            scale: 0.9,
+            duration: 0.5,
+            ease: "power2.out"
+        })
     }
 
-    updatePerformanceStats(type, level) {
-        const stats = this.calculateNewStats(type, level)
-        
+    updatePerformanceStats(stats) {
         Object.entries(stats).forEach(([stat, value]) => {
-            const display = document.querySelector(`[data-stat="${stat}"]`)
-            if (display) {
-                gsap.to(display, {
-                    textContent: value,
-                    duration: 1,
-                    snap: { textContent: 1 }
+            const element = document.querySelector(`[data-metric="${stat}"]`)
+            if (element) {
+                gsap.to(element, {
+                    innerText: Math.round(value),
+                    duration: this.animations.valueChange.duration,
+                    ease: this.animations.valueChange.ease,
+                    snap: { innerText: 1 }
                 })
             }
         })
     }
 
-    animateUpgradeEffect(button) {
-        gsap.to(button, {
-            scale: 1.1,
-            duration: 0.2,
-            yoyo: true,
-            repeat: 1
-        })
-
-        this.createParticleEffect(button)
-    }
-
-    createParticleEffect(element) {
-        const particles = 12
-        const colors = ['#ff0000', '#ff3333', '#ff6666']
-
-        for (let i = 0; i < particles; i++) {
-            const particle = document.createElement('div')
-            particle.className = 'upgrade-particle'
-            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
-            
-            const rect = element.getBoundingClientRect()
-            particle.style.left = `${rect.left + rect.width / 2}px`
-            particle.style.top = `${rect.top + rect.height / 2}px`
-            
-            document.body.appendChild(particle)
-
-            gsap.to(particle, {
-                x: (Math.random() - 0.5) * 100,
-                y: (Math.random() - 0.5) * 100,
-                opacity: 0,
-                duration: 0.6,
-                onComplete: () => particle.remove()
-            })
-        }
-    }
-
-    handleModelRotation(e) {
-        const rect = this.modelRotator.getBoundingClientRect()
-        const x = (e.clientX - rect.left) / rect.width
-        const y = (e.clientY - rect.top) / rect.height
-        
-        gsap.to(this.modelRotator, {
-            rotationY: -20 + (x * 40),
-            rotationX: 10 - (y * 20),
-            duration: 0.5
+    showUpgradeCategory(category) {
+        const sections = document.querySelectorAll('.upgrade-section')
+        sections.forEach(section => {
+            section.classList.toggle('active', section.dataset.category === category)
         })
     }
 
-    updateTooltipPositions() {
-        this.tooltips.forEach(tooltip => {
-            const element = document.querySelector(tooltip.dataset.tooltip)
-            const rect = element.getBoundingClientRect()
-            
-            gsap.set(tooltip, {
-                x: rect.left + rect.width / 2,
-                y: rect.top - 10
-            })
-        })
+    changeModelView(view) {
+        document.dispatchEvent(new CustomEvent('viewChange', { detail: view }))
     }
 
-    calculateNewStats(type, level) {
-        return {
-            power: 200,
-            torque: 115,
-            weight: 195,
-            handling: 95
-        }
+    executeModelControl(control) {
+        document.dispatchEvent(new CustomEvent('modelControl', { detail: control }))
     }
 }
 
