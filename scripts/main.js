@@ -6,6 +6,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const physicsEngine = new PhysicsEngine()
     const performanceMapper = new PerformanceMapper()
     const advancedSystems = new AdvancedSystems()
+    const loadingScreen = document.querySelector('.loading-screen')
+const loadingProgress = document.querySelector('.loading-progress')
+
+function updateLoadingProgress(progress) {
+    loadingProgress.textContent = `${Math.round(progress)}%`
+    if (progress >= 100) {
+        loadingScreen.style.opacity = '0'
+        setTimeout(() => {
+            loadingScreen.style.display = 'none'
+        }, 500)
+    }
+}
+
+let totalAssets = 0
+let loadedAssets = 0
+
+function trackAssetLoad() {
+    loadedAssets++
+    const progress = (loadedAssets / totalAssets) * 100
+    updateLoadingProgress(progress)
+}
+
+function initializeLoading() {
+    totalAssets = Object.keys(BikeData).length + 3 // bikes + essential assets
+    loadingScreen.style.display = 'flex'
+    loadingScreen.style.opacity = '1'
+}
+
+initializeLoading()
 
     let currentBike = 'r1'
     let isSimulationRunning = false
